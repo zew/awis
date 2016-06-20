@@ -1,4 +1,5 @@
 *.log
 main.sqlite
 setenv.bat
+setenv*.bat
 tmp/*

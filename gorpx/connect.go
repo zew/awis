@@ -47,7 +47,7 @@ func DBMap(dbName ...string) *gorp.DbMap {
 		db, err = sql.Open("sqlite3", "./main.sqlite")
 		util.CheckErr(err)
 	} else {
-		connStr2 := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s%s", sh.User, util.SQL_Pw(), sh.Host, sh.Port, sh.DBName, paramsJoined)
+		connStr2 := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s%s", sh.User, util.EnvVar("SQL_PW"), sh.Host, sh.Port, sh.DBName, paramsJoined)
 		logx.Printf("gorp conn: %v", connStr2)
 		db, err = sql.Open("mysql", connStr2)
 		util.CheckErr(err)

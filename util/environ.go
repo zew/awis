@@ -6,8 +6,6 @@ import (
 	"strings"
 )
 
-const sqlPW = "SQL_PW"
-
 func Env() string {
 	environ := os.Getenv("EXEC_ENVIRONMENT")
 	if environ == "" {
@@ -16,19 +14,19 @@ func Env() string {
 	return environ
 }
 
-func SQL_Pw() string {
+func EnvVar(key string) string {
 	all := os.Environ()
 	found := false
 	for _, v := range all {
-		if strings.HasPrefix(v, sqlPW) {
+		if strings.HasPrefix(v, key) {
 			found = true
 		}
 	}
 	if !found {
-		log.Printf("\nProgram *requires* environment variable %q.\nExiting.\n", sqlPW)
+		log.Printf("\nProgram *requires* environment variable %q.\nExiting.\n", key)
 		os.Exit(1)
 	}
 
-	pass := os.Getenv(sqlPW)
-	return pass
+	envVal := os.Getenv(key)
+	return envVal
 }

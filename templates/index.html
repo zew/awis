@@ -6,6 +6,15 @@
 		<p style='font-size:14px;padding:8px;' class='flash-msg-area'>{{.FlashMsg}}</p>
 	{{end}}
 
+	{{if ne .URL "" }}
+		<a href='{{.URL}}'  target='try' >{{.URL}}</a><br>
+	{{end}}
+
+
+	<pre>
+		{{ .JSON }}
+	</pre>
+
 </div>
 
 

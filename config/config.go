@@ -20,6 +20,7 @@ type SQLHost struct {
 }
 
 type Config3 struct {
+	Email        string             `json:"email"`
 	VersionMajor int                `json:"version_major"`
 	VersionMinor int                `json:"version_minor"`
 	AppName      string             `json:"app_name"`
@@ -30,6 +31,10 @@ type Config3 struct {
 var Config Config3
 
 func init() {
+
+	for _, v := range []string{"SQL_PW", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"} {
+		util.EnvVar(v)
+	}
 
 	pwd, err := os.Getwd()
 	util.CheckErr(err)
