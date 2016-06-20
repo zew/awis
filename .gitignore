@@ -2,4 +2,5 @@
 main.sqlite
 setenv.bat
 setenv*.bat
+*.exe
 tmp/*
