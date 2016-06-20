@@ -1,0 +1,39 @@
+<html>
+<head>
+	<meta charset="utf-8">
+	<link rel="shortcut icon" href="data:;base64,=">
+	<link rel="icon"          href="data:;base64,=">
+	{{if ne .HTMLTitle ""}}
+		<title>{{ .HTMLTitle }}</title>
+	{{else}}
+		<title>no title set</title>
+	{{end}}
+	<link  href="{{ pref "/css/design.css" }}" rel="stylesheet" type="text/css" />
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+	<script>if (!window.jQuery) { document.write('<script src="{{ pref "/js/jquery.min.js" }}"><\/script>'); }
+		$( document ).ready(function() {
+			console.log('doc ready');
+			// $( "body" ).children().last().append( "<p>DOM is loaded 2.</p>" );
+		});
+		// var PREFIX = "{{ pref "" }}";
+		const PREFIX = "{{ pref "" }}";
+	</script>
+	{{ partial "layout-js" }}
+</head>
+<body>
+<style> 
+	pre	{line-height:14px;}
+	body {font-family:tahoma; font-size: 15px;}
+</style>
+
+	<!-- is to parse out the body by splitting it -->
+	<span class='body'></span>
+
+	{{ yield }}
+
+	<span class='body'></span>
+	<div style="border-top: 2px solid #aaa;margin-top:20px;font-size: 80%;">
+		<a href="{{ pref "" }}"       accesskey="h" >Home</a><br />
+	</div>
+  </body>
+</html>

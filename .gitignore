@@ -1,0 +1,4 @@
+*.log
+main.sqlite
+setenv.bat
+tmp/*

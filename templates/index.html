@@ -1,0 +1,16 @@
+<div style='margin:0 20px;margin-top:20px;width: 80%;text-align:left;'>
+	
+	<p style='font-size:14px;margin-bottom:-2px;'>{{.Title}}</p>
+
+	{{if ne .FlashMsg "" }}
+		<p style='font-size:14px;padding:8px;' class='flash-msg-area'>{{.FlashMsg}}</p>
+	{{end}}
+
+</div>
+
+
+<script type="text/javascript">
+	$( document ).ready(function() {
+		$( '#tab-body input' ).filter(":visible").first().focus();
+	});
+</script>

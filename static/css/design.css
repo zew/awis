@@ -1,0 +1,98 @@
+* {
+	font-family: tahoma;
+}
+
+a {
+	text-decoration: none;  /* remove the underline from image links*/
+}
+
+
+a.image-link {
+	text-decoration: none;
+	display: inline-block;
+	vertical-align: middle;
+}
+
+pre {
+	line-height:14px;
+}
+
+body {
+	font-family:tahoma; font-size: 15px;
+}
+
+select{
+	margin: 4px 0px;
+    padding: 4px 0px;
+    font-size: 13px;
+    width: 120px;
+}
+
+
+.tab-lvl-1{
+	aavertical-align:top;
+	font-size:16px;
+	line-height:80%;
+	text-decoration: none;
+	display:inline-block;
+	padding: 8px 12px;
+	padding-top:8px;
+	margin: 0;
+	margin-top: 4px;
+	border: 1px solid #888;
+	border-bottom: none;
+	border-top-right-radius: 6px;
+	border-top-left-radius:  6px;
+	position:relative;
+	z-index:2;
+}
+
+.tab-lvl-1-active{
+	background-color:#fff; 
+	color: #000;
+
+}
+
+.tab-lvl-1-passive{
+	background-color: #fff; 
+	color: #CCC;
+}
+
+
+.ib {
+	display:inline-block;
+	vertical-align:middle;
+	/* 	width:150px;  no width; leave it dynamic*/ 
+}
+
+.control-menu{
+	position: relative;
+	/*display: ;*/
+}
+
+img.icon {
+	height: 22px;
+}
+
+.ajax-msg-bubble {
+	position: absolute;
+	z-index:  10;
+
+	color:#c44;
+	/*color:#faa;*/
+
+	background-color:#eee;
+	border-radius: 6px;
+	padding: 4px 8px;
+}
+
+.flash-msg-area{
+	font-size:14px;
+
+	color:#c44;
+	/*color:#faa;*/
+
+	background-color:#eee;
+	border-radius: 6px;
+	padding: 4px 8px;
+}

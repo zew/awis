@@ -1,0 +1,23 @@
+{
+	"version_major": 0,
+	"version_minor": 81,
+	"app_name": "AWIS",
+	"sql_lite": false,
+	"sql_hosts": 
+	{ 
+		"dev":{
+	 		"user":    "pbberlin",
+	 		"hosa":    "127.0.0.1",
+	 		"host":    "10.8.1.215",
+	 		"port":    "3306",
+	 		"db_name": "awisdb",
+	 		"connection_params":{
+				"charset":   "utf8mb4,utf8",
+				"loc":       "US%2FPacific",
+				"loc":       "UTC",
+				"parseTime": "true",
+				"strict":    "true"
+	 		}
+		}
+	}
+}
