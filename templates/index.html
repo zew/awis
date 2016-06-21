@@ -2,12 +2,24 @@
 	
 	<p style='font-size:14px;margin-bottom:-2px;'>{{.Title}}</p>
 
+	<a target="second" href="http://docs.aws.amazon.com/AlexaTopSites/latest/">Doku Top Sites</a><br/>
+	<a target="second" href="http://docs.aws.amazon.com/AlexaWebInfoService/latest/">Doku Site Info</a><br/>
+	<a target="second" href="http://s3.amazonaws.com/alexa-static/top-1m.csv.zip">Top Million across all countries</a><br/>
+
 	{{if ne .FlashMsg "" }}
 		<p style='font-size:14px;padding:8px;' class='flash-msg-area'>{{.FlashMsg}}</p>
 	{{end}}
 
+	<form action='{{ pref "/queryawis" }}'>
+		<input type="input"  name="Url"          id="Url"         value="{{.ParamUrl}}" >          <br />
+		<input type="input"  name="Start"        id="Start"       value="{{.ParamStart}}" >        <br />
+		<input type="input"  name="Count"        id="Count"       value="{{.ParamCount}}" >        <br />
+		<input type="input"  name="CountryCode"  id="CountryCode" value="{{.ParamCountryCode}}" >  <br />
+		<input type="submit" name="submit" id=""       value=" Submit " accesskey="s" >
+	</form>
+
 	{{if ne .URL "" }}
-		<a href='{{.URL}}'  target='try' >{{.URL}}</a><br>
+		<a href='{{.URL}}'  target='second' >{{.URL}}</a><br>
 	{{end}}
 
 
@@ -20,6 +32,7 @@
 
 <script type="text/javascript">
 	$( document ).ready(function() {
-		$( '#tab-body input' ).filter(":visible").first().focus();
+		// $( '#tab-body input' ).filter(":visible").first().focus();
+		$( '#Url' ).focus();
 	});
 </script>

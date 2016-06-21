@@ -75,6 +75,8 @@ func main() {
 	i01.Get(Pref(""), index)
 	i01.Get(Pref("/"), index)
 
+	i01.Get(Pref("/queryawis"), queryawis)
+
 	logx.Printf("setting up mysql server...")
 	gorpx.DBMap()
 	defer gorpx.DB().Close()
