@@ -19,19 +19,11 @@ import (
 	"github.com/zew/awis/util"
 )
 
-var ActionName = "UrlInfo"
-var ActionName2 = "SitesLinkingIn"
-
 var AWSAccessKeyId = util.EnvVar("AWS_ACCESS_KEY_ID")
 var SecretAccessKey = util.EnvVar("AWS_SECRET_ACCESS_KEY")
 
 var ResponseGroupName = "Rank,ContactInfo,LinksInCount"
 var ServiceHost = "awis.amazonaws.com"
-var NumReturn = "10"
-var StartNum = "1"
-var SigVersion = "2"
-var SignatureMethod = "HmacSHA256" // hash algo
-var site = "zew.de"
 
 var sess *session.Session
 
@@ -60,34 +52,6 @@ func index(c *iris.Context) {
 
 	/*
 
-
-	   // Get site info from AWIS.
-	   public function getUrlInfo() {
-	       $queryParams = $this->buildQueryParams();
-	       $sig = $this->generateSignature($queryParams);
-	       $url = 'http://' . self::$ServiceHost . '/?' . $queryParams . '&Signature=' . $sig;
-	       $ret = self::makeRequest($url);
-	       echo "\nResults for " . $this->site .":\n\n";
-	       self::parseResponse($ret);
-	   }
-
-
-	   // Makes request to AWIS
-	   // @param String $url   URL to make request to
-	   // @return String       Result of request
-	   protected static function makeRequest($url) {
-	       echo "\nMaking request to:\n$url\n";
-	       $ch = curl_init($url);
-	       curl_setopt($ch, CURLOPT_TIMEOUT, 4);
-	       curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-	       $result = curl_exec($ch);
-	       curl_close($ch);
-	       return $result;
-	   }
-
-	   // Parses XML response from AWIS and displays selected data
-	   // @param String $response    xml response from AWIS
-	   public static function parseResponse($response) {
 	       $xml = new SimpleXMLElement($response,null,false,
 	                                   'http://awis.amazonaws.com/doc/2005-07-11');
 	       if($xml->count() && $xml->Response->UrlInfoResult->Alexa->count()) {
@@ -110,26 +74,8 @@ func index(c *iris.Context) {
 	       }
 	   }
 
-	   //Generates an HMAC signature per RFC 2104.
-	   //@param String $url       URL to use in createing signature
-	   protected function generateSignature($url) {
-	       $sign = "GET\n" . strtolower(self::$ServiceHost) . "\n/\n". $url;
-	       echo "String to sign: \n" . $sign . "\n";
-	       $sig = base64_encode(hash_hmac('sha256', $sign, $this->SecretAccessKey, true));
-	       echo "\nSignature: " . $sig ."\n";
-	       return rawurlencode($sig);
-	   }
-
-
 
 	*/
-
-	// c.RequestCtx.WriteString("aaa<br>\n")
-
-	// Builds query parameters for the request to AWIS.
-	// Parameter names will be in alphabetical order and
-	// parameter values will be urlencoded per RFC 3986.
-	// @return String query parameters for the request
 
 	myUrl := url.URL{}
 	myUrl.Host = ServiceHost
@@ -137,17 +83,24 @@ func index(c *iris.Context) {
 	logx.Printf("host is %v", myUrl.String())
 
 	vals := map[string]string{
-		"Action":         "SitesLinkingIn",
-		"AWSAccessKeyId": util.EnvVar("AWS_ACCESS_KEY_ID"),
-		// "Signature" : ""
+		"Action":           "SitesLinkingIn",
+		"AWSAccessKeyId":   util.EnvVar("AWS_ACCESS_KEY_ID"),
 		"SignatureMethod":  "HmacSHA256",
 		"SignatureVersion": "2",
 		"Timestamp":        getTimestamp(),
-		"Url":              "www.spiegel.de",
-		"ResponseGroup":    "SitesLinkingIn",
-		"Count":            "10",
-		"Start":            "1",
+		// "Signature" : "will be added by awsauth.Sign2(req)"
+		"Url":           "www.spiegel.de",
+		"ResponseGroup": "SitesLinkingIn",
+		"Count":         "10",
+		"Start":         "0",
 	}
+
+	vals2 := map[string]string{
+		"Action":            "UrlInfo",
+		"ResponseGroupName": "Rank,ContactInfo,LinksInCount",
+	}
+	_ = vals2
+
 	queryStr := ""
 	for k, v := range vals {
 		queryStr += fmt.Sprintf("%v=%v&", k, v)
@@ -164,34 +117,22 @@ func index(c *iris.Context) {
 	util.CheckErr(err)
 	// logx.Printf("req is %v", req)
 
-	var reqSigned *http.Request
+	// Explicit or implicit -
+	// At every rate - we need to call Sign2(),
+	// because awsauth does not know about awis
 	if false {
-		reqSigned = awsauth.Sign2(req, awsauth.Credentials{
+		awsauth.Sign2(req, awsauth.Credentials{
 			AccessKeyID:     util.EnvVar("AWS_ACCESS_KEY_ID"),
 			SecretAccessKey: util.EnvVar("AWS_SECRET_ACCESS_KEY"),
 			// SecurityToken:   "Security Token", // STS (optional)
 		})
-
 	} else {
-		reqSigned = awsauth.Sign2(req)
+		awsauth.Sign2(req)
 	}
+	var reqSigned *http.Request
+	reqSigned = req
 
-	if reqSigned == nil {
-		logx.Printf("what is this return value DOING?")
-		reqSigned = req
-	}
-
-	var netTransport = &http.Transport{
-		Dial: (&net.Dialer{
-			Timeout: 5 * time.Second,
-		}).Dial,
-		TLSHandshakeTimeout: 5 * time.Second,
-	}
-	var netClient = &http.Client{
-		Timeout:   time.Second * 10,
-		Transport: netTransport,
-	}
-	resp, err := netClient.Do(reqSigned)
+	resp, err := client().Do(reqSigned)
 	util.CheckErr(err)
 	defer resp.Body.Close()
 
@@ -223,4 +164,19 @@ func index(c *iris.Context) {
 	err = c.Render("index.html", s)
 	util.CheckErr(err)
 
+}
+
+func client() *http.Client {
+	var netTransport = &http.Transport{
+		Dial: (&net.Dialer{
+			Timeout: 5 * time.Second,
+		}).Dial,
+		TLSHandshakeTimeout: 5 * time.Second,
+	}
+	var netClient = &http.Client{
+		Timeout:   time.Second * 10,
+		Transport: netTransport,
+	}
+
+	return netClient
 }
