@@ -1,11 +1,15 @@
 package mdl
 
-// The prefix creep is necessary, to make the structs anonymously embeddable
-type Domain struct {
-	Id          int    `db:"domain_id, primarykey, autoincrement"`
-	Name        string `db:"domain_name, size:200, not null"`
-	Label       string `db:"domain_label, size:200, not null"`
-	Description string `db:"domain_description, size:200, not null"`
+type Site struct {
+	Id                         int     `db:"domain_id, primarykey, autoincrement"`
+	Name                       string  `xml:"DataUrl" db:"domain_name, size:200, not null"` // unique with SetUnique
+	Label                      string  `db:"domain_label, size:200, not null"`
+	Description                string  `db:"domain_description, size:200, not null"`
+	GlobalRank                 int     `xml:"Global>Rank" db:"global_rank, not null"`
+	CountryRank                int     `xml:"Country>Rank" db:"country_rank, not null"`
+	CountryReachPerMillion     float64 `xml:"Country>Reach>PerMillion" db:"country_reach_permillion, not null"`
+	CountryPageViewsPerMillion float64 `xml:"Country>PageViews>PerMillion" db:"country_pageviews_permillion, not null"`
+	CountryPageViewsPerUser    float64 `xml:"Country>PageViews>PerUser" db:"country_pageviews_peruser, not null"`
 }
 
 //

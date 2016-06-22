@@ -64,7 +64,7 @@ func DBMap(dbName ...string) *gorp.DbMap {
 		dbmap = &gorp.DbMap{Db: db, Dialect: gorp.MySQLDialect{"InnoDB", "UTF8"}}
 	}
 
-	t1 := dbmap.AddTable(mdl.Domain{})
+	t1 := dbmap.AddTable(mdl.Site{})
 	t1.ColMap("domain_name").SetUnique(true)
 	dbmap.AddTable(mdl.Detail{})
 
@@ -77,7 +77,7 @@ func DBMap(dbName ...string) *gorp.DbMap {
 		if err != nil {
 			logx.Printf("error creating indize: %v", err)
 		}
-		CreateRumpData()
+		// CreateRumpData()
 	}
 	dbmap.TraceOff()
 
@@ -87,10 +87,10 @@ func DBMap(dbName ...string) *gorp.DbMap {
 
 func CreateRumpData() {
 
-	pg1 := mdl.Domain{}
+	pg1 := mdl.Site{}
 	pg1.Id = 1 // ignored anyway
-	pg1.Name = "cit"
-	pg1.Label = "Corp. Income Tax"
+	pg1.Name = "dummy.org"
+	pg1.Label = "Some dummy label"
 	err := DBMap().Insert(&pg1)
 	util.CheckErr(err)
 
