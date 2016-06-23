@@ -57,18 +57,23 @@ func DBMap(dbName ...string) *gorp.DbMap {
 	util.CheckErr(err)
 	logx.Printf("gorp database connection up")
 
-	// construct a gorp DbMap
-	if config.Config.SQLite {
-		dbmap = &gorp.DbMap{Db: db, Dialect: gorp.SqliteDialect{}}
-	} else {
-		dbmap = &gorp.DbMap{Db: db, Dialect: gorp.MySQLDialect{"InnoDB", "UTF8"}}
-	}
+	//
+	//
 
+	// dbmapTemp := IndependentDbMapper(db)
+	// tt1 := dbmapTemp.AddTable(mdl.Meta{})
+	// tt1.ColMap("domain_name").SetUnique(true)
+	// err = dbmapTemp.CreateTables()
+	// if err == nil {
+	// 	dbmapTemp.CreateIndex()
+	// }
+
+	dbmap = IndependentDbMapper(db)
+	dbmap.AddTable(mdl.Meta{})
 	t1 := dbmap.AddTable(mdl.Site{})
 	t1.ColMap("domain_name").SetUnique(true)
-	dbmap.AddTable(mdl.Detail{})
 
-	dbmap.TraceOn("gx-", logx.Get())
+	// dbmap.TraceOn("gx-", logx.Get())
 	err = dbmap.CreateTables()
 	if err != nil {
 		logx.Printf("tables already exist: %v", err)
@@ -121,4 +126,14 @@ func TableName(i interface{}) string {
 		return dbmap.Dialect.QuoteField(table.TableName)
 	}
 	return t.Name()
+}
+
+func IndependentDbMapper(db *sql.DB) *gorp.DbMap {
+	var dbmap *gorp.DbMap
+	if config.Config.SQLite {
+		dbmap = &gorp.DbMap{Db: db, Dialect: gorp.SqliteDialect{}}
+	} else {
+		dbmap = &gorp.DbMap{Db: db, Dialect: gorp.MySQLDialect{"InnoDB", "UTF8"}}
+	}
+	return dbmap
 }

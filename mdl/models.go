@@ -12,16 +12,37 @@ type Site struct {
 	CountryPageViewsPerUser    float64 `xml:"Country>PageViews>PerUser" db:"country_pageviews_peruser, not null"`
 }
 
-//
-//
-type Detail struct {
-	Id           int    `db:"detail_id, primarykey, autoincrement"`
-	DomainId     int    `db:"domain_id, not null"`
-	Name         string `db:"detail_name, size:200, not null"`
-	Label        string `db:"detail_label, size:200, not null"`
-	Description  string `db:"detail_description, size:200, not null"`
-	Type         string `db:"detail_type, not null, server default:float"`
-	CXLabel      int    `db:"detail_cx_label, not null, server default:150"`
-	CXControl    int    `db:"detail_cx_control, not null, server default:150"`
-	RenderMethod string `db:"detail_render_method, size:200, not null, server default:input"`
+type Meta struct {
+	Id          int    `db:"meta_id, primarykey, autoincrement"`
+	Name        string `xml:"ContactInfo>DataUrl" db:"domain_name, size:200, not null"`                       // unique with SetUnique
+	PhoneNumber string `xml:"ContactInfo>PhoneNumbers>PhoneNumber" db:"meta_phonenumber, size:200, not null"` // multiple
+	OwnerName   string `xml:"ContactInfo>OwnerName" db:"meta_ownername, size:200, not null"`
+	Email       string `xml:"ContactInfo>Email" db:"meta_email, size:200, not null"`
+	Street      string `xml:"ContactInfo>PhysicalAddress>Streets>Street" db:"meta_street, size:200, not null"` // multiple
+	City        string `xml:"ContactInfo>PhysicalAddress>City" db:"meta_city, size:200, not null"`
+	Country     string `xml:"ContactInfo>PhysicalAddress>Country" db:"meta_country, size:200, not null"`
+
+	Title        string `xml:"ContentData>SiteData>Title" db:"meta_title, size:200, not null"`
+	Description  string `xml:"ContentData>SiteData>Description" db:"meta_description, size:1200, not null"`
+	OnlineSince  string `xml:"ContentData>SiteData>OnlineSince" db:"meta_onlinesince, size:1200, not null"`
+	AdultContent string `xml:"ContentData>AdultContent" db:"meta_adultcontent, size:10, not null"`
+
+	Locale   string `xml:"ContentData>Language>Locale" db:"meta_locale, size:10, not null"`
+	Encoding string `xml:"ContentData>Language>Encoding" db:"meta_encoding, size:20, not null"`
+
+	CategoryTitle string `xml:"Related>Categories>CategoryData>Title" db:"meta_categorytitle, size:200, not null"`
+	CategoryPath  string `xml:"Related>Categories>CategoryData>AbsolutePath" db:"meta_categorypath, size:200, not null"`
+
+	// CharData string `xml:"TrafficData>RankByCountry,chardata" db:"meta_rankchars, size:600, not null"`
+	// RankByCountry string `xml:"TrafficData>RankByCountry>Country>Code,attr" db:"meta_rankbycountry, size:50, not null"`
+	Ranks []TRank `xml:"TrafficData>RankByCountry>Country" db:"meta_xxx, size:600, not null"`
+}
+
+type TRank struct {
+	Value string `xml:",chardata"`
+
+	Code      string `xml:"Code,attr"`
+	Rank      string `xml:"Rank"`
+	PageViews string `xml:"Contribution>PageViews"`
+	Users     string `xml:"Contribution>Users"`
 }

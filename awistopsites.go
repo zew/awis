@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/xml"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -17,11 +18,9 @@ import (
 	"github.com/smartystreets/go-aws-auth"
 	"github.com/zew/awis/gorpx"
 	"github.com/zew/awis/logx"
+	"github.com/zew/awis/mdl"
 	"github.com/zew/awis/util"
 )
-
-var ServiceHost1 = "ats.amazonaws.com"
-var ServiceHost2 = "awis.amazonaws.com"
 
 var awsSess *session.Session // not needed
 
@@ -59,9 +58,24 @@ func httpClient() *http.Client {
 	return netClient
 }
 
-func queryawis(c *iris.Context) {
+func ParseIntoSite(dat []byte) ([]mdl.Site, error) {
+	type Result struct {
+		// Sites []Site `xml:"TopSitesResponse>Response>TopSitesResult>Alexa>TopSites>Country>Sites>Site"`
+		Sites []mdl.Site `xml:"Response>TopSitesResult>Alexa>TopSites>Country>Sites>Site"` // omit the outmost tag name TopSitesResponse
+	}
+	result := Result{}
+	err := xml.Unmarshal(dat, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result.Sites, nil
+}
+
+func awisTopSites(c *iris.Context) {
 
 	var err error
+
+	var ServiceHost1 = "ats.amazonaws.com"
 
 	myUrl := url.URL{}
 	myUrl.Host = ServiceHost1
@@ -81,14 +95,6 @@ func queryawis(c *iris.Context) {
 		"Start":         util.EffectiveParam(c, "Start", "0"),
 		"Count":         util.EffectiveParam(c, "Count", "5"),
 	}
-
-	vals2 := map[string]string{
-		"Action1":           "UrlInfo",
-		"Action2":           "SitesLinkingIn",
-		"ResponseGroup":     "SitesLinkingIn",
-		"ResponseGroupName": "Rank,ContactInfo,LinksInCount",
-	}
-	_ = vals2
 
 	queryStr := ""
 	for k, v := range vals {
@@ -123,7 +129,7 @@ func queryawis(c *iris.Context) {
 	util.CheckErr(err)
 	// target := html.EscapeString(string(respBytes))
 
-	sites, err := ParseIntoStruct(respBytes)
+	sites, err := ParseIntoSite(respBytes)
 	if err != nil {
 		c.Text(200, err.Error())
 		return
@@ -142,6 +148,7 @@ func queryawis(c *iris.Context) {
 		Title     string
 		FlashMsg  template.HTML
 
+		FormAction       string
 		ParamUrl         string
 		ParamStart       string
 		ParamCount       string
@@ -155,6 +162,7 @@ func queryawis(c *iris.Context) {
 		FlashMsg:         template.HTML("Alexa Web Information Service"),
 		StructDump:       template.HTML(display),
 		URL:              reqSigned.URL.String(),
+		FormAction:       PathTopSites,
 		ParamUrl:         util.EffectiveParam(c, "Url", "www.zew.de"),
 		ParamStart:       util.EffectiveParam(c, "Start", "0"),
 		ParamCount:       util.EffectiveParam(c, "Count", "5"),

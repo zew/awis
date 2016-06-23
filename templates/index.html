@@ -4,13 +4,14 @@
 
 	<a target="second" href="http://docs.aws.amazon.com/AlexaTopSites/latest/">Doku Top Sites</a><br/>
 	<a target="second" href="http://docs.aws.amazon.com/AlexaWebInfoService/latest/">Doku Site Info</a><br/>
+	<a target="second" href="http://www.alexa.com/siteinfo/focus.de">Example data for a single domain</a><br/>
 	<a target="second" href="http://s3.amazonaws.com/alexa-static/top-1m.csv.zip">Top Million across all countries</a><br/>
 
 	{{if ne .FlashMsg "" }}
 		<p style='font-size:14px;padding:8px;' class='flash-msg-area'>{{.FlashMsg}}</p>
 	{{end}}
 
-	<form action='{{ pref "/queryawis" }}'>
+	<form action='{{ pref .FormAction }}'>
 		<input type="input"  name="Url"          id="Url"         value="{{.ParamUrl}}" >          <br />
 		<input type="input"  name="Start"        id="Start"       value="{{.ParamStart}}" >        <br />
 		<input type="input"  name="Count"        id="Count"       value="{{.ParamCount}}" >        <br />
@@ -23,9 +24,18 @@
 	{{end}}
 
 
-	<pre>
+
+	<textarea cols='145' rows='144'>
 		{{ .StructDump }}
-	</pre>
+	</textarea>
+
+	{{ if ne "" .StructDump2 }}
+		<textarea cols='145' rows='144'>
+			{{ .StructDump2 }}
+		</textarea>
+	{{end}}
+
+
 
 </div>
 

@@ -47,6 +47,11 @@ func AppName(p ...string) string {
 	return s
 }
 
+const (
+	PathTopSites   = "/awis-top-sites"
+	PathDomainInfo = "/awis-domain-info"
+)
+
 func main() {
 
 	// iris.Templates("./*.html")
@@ -75,7 +80,8 @@ func main() {
 	i01.Get(Pref(""), index)
 	i01.Get(Pref("/"), index)
 
-	i01.Get(Pref("/queryawis"), queryawis)
+	i01.Get(Pref(PathTopSites), awisTopSites)
+	i01.Get(Pref(PathDomainInfo), awisDomainInfo)
 	i01.Get(Pref("/xmlparse"), xmlparse)
 
 	logx.Printf("setting up mysql server...")
