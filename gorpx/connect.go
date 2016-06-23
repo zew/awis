@@ -60,18 +60,41 @@ func DBMap(dbName ...string) *gorp.DbMap {
 	//
 	//
 
-	// dbmapTemp := IndependentDbMapper(db)
-	// tt1 := dbmapTemp.AddTable(mdl.Meta{})
-	// tt1.ColMap("domain_name").SetUnique(true)
-	// err = dbmapTemp.CreateTables()
-	// if err == nil {
-	// 	dbmapTemp.CreateIndex()
-	// }
+	{
+		mp := IndependentDbMapper(db)
+		t := mp.AddTable(mdl.Site{})
+		t.ColMap("domain_name").SetUnique(true)
+		err = mp.CreateTables()
+		if err == nil {
+			mp.CreateIndex()
+		}
+	}
+
+	{
+		mp := IndependentDbMapper(db)
+		t := mp.AddTable(mdl.Meta{})
+		t.ColMap("domain_name").SetUnique(true)
+		err = mp.CreateTables()
+		if err == nil {
+			mp.CreateIndex()
+		}
+	}
+
+	{
+		mp := IndependentDbMapper(db)
+		t := mp.AddTable(mdl.Rank{})
+		// t.ColMap("domain_name").SetUnique(true)
+		// t.AddIndex("idx_name_desc", "Btree", []string{"domain_name", "rank_code"})
+		t.SetUniqueTogether("domain_name", "rank_code")
+		err = mp.CreateTables()
+		if err == nil {
+			mp.CreateIndex()
+		}
+	}
 
 	dbmap = IndependentDbMapper(db)
 	dbmap.AddTable(mdl.Meta{})
-	t1 := dbmap.AddTable(mdl.Site{})
-	t1.ColMap("domain_name").SetUnique(true)
+	dbmap.AddTable(mdl.Rank{})
 
 	// dbmap.TraceOn("gx-", logx.Get())
 	err = dbmap.CreateTables()

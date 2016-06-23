@@ -18,18 +18,24 @@ import (
 	"github.com/zew/awis/util"
 )
 
-func ParseIntoContact(dat []byte) (mdl.Meta, error) {
+func ParseIntoContact(dat []byte) (mdl.Meta, []mdl.Rank, error) {
 	type Result struct {
-		// Sites []Site `xml:"UrlInfoResponse>Response>UrlInfoResult>Alexa>ContactInfo"`
-		// Contact mdl.Meta `xml:"Response>UrlInfoResult>Alexa>ContactInfo"` // omit the outmost tag name TopSitesResponse
 		Contact mdl.Meta `xml:"Response>UrlInfoResult>Alexa"` // omit the outmost tag name TopSitesResponse
 	}
-	result := Result{}
-	err := xml.Unmarshal(dat, &result)
-	if err != nil {
-		return result.Contact, err
+	type ResRanks struct {
+		Ranks []mdl.Rank `xml:"Response>UrlInfoResult>Alexa>TrafficData>RankByCountry>Country"`
 	}
-	return result.Contact, nil
+	res1 := Result{}
+	err := xml.Unmarshal(dat, &res1)
+	if err != nil {
+		return res1.Contact, nil, err
+	}
+	res2 := ResRanks{}
+	err = xml.Unmarshal(dat, &res2)
+	if err != nil {
+		return res1.Contact, nil, err
+	}
+	return res1.Contact, res2.Ranks, nil
 }
 
 func awisDomainInfo(c *iris.Context) {
@@ -75,7 +81,7 @@ func awisDomainInfo(c *iris.Context) {
 	util.CheckErr(err)
 	// target := html.EscapeString(string(respBytes))
 
-	contact, err := ParseIntoContact(respBytes)
+	contact, ranks, err := ParseIntoContact(respBytes)
 	if err != nil {
 		c.Text(200, err.Error())
 		return
@@ -84,9 +90,19 @@ func awisDomainInfo(c *iris.Context) {
 	err = gorpx.DBMap().Insert(&contact)
 	if err != nil {
 		c.Text(200, err.Error())
+	} else {
+		for _, rank := range ranks {
+			rank.Name = contact.Name
+			err = gorpx.DBMap().Insert(&rank)
+			if err != nil {
+				c.Text(200, err.Error())
+				break
+			}
+		}
 	}
 
 	display := util.IndentedDump(contact)
+	display = display + "\n" + util.IndentedDump(ranks)
 	// c.Text(200, display)
 
 	s := struct {

@@ -33,16 +33,58 @@ type Meta struct {
 	CategoryTitle string `xml:"Related>Categories>CategoryData>Title" db:"meta_categorytitle, size:200, not null"`
 	CategoryPath  string `xml:"Related>Categories>CategoryData>AbsolutePath" db:"meta_categorypath, size:200, not null"`
 
-	// CharData string `xml:"TrafficData>RankByCountry,chardata" db:"meta_rankchars, size:600, not null"`
-	// RankByCountry string `xml:"TrafficData>RankByCountry>Country>Code,attr" db:"meta_rankbycountry, size:50, not null"`
-	Ranks []TRank `xml:"TrafficData>RankByCountry>Country" db:"meta_xxx, size:600, not null"`
+	// Into separate struct:
+	// Ranks []Rank `xml:"TrafficData>RankByCountry>Country"`
+
+	/*
+	     <LinksInCount>159636</LinksInCount>
+	     <OwnedDomains>
+	       <OwnedDomain>
+	         <Domain>gogoole.de</Domain>
+	         <Title>gogoole.de</Title>
+	       </OwnedDomain>
+	       <OwnedDomain>
+	         <Domain>goldengate-marken.de</Domain>
+	         <Title>goldengate-marken.de</Title>
+	       </OwnedDomain>
+
+
+	   <Related>
+	     <DataUrl type="canonical">google.de</DataUrl>
+	     <RelatedLinks>
+	       <RelatedLink>
+	         <DataUrl type="canonical">web.de/</DataUrl>
+	       </RelatedLink>
+	       <RelatedLink>
+	         <DataUrl type="canonical">ebay.de/</DataUrl>
+
+
+	     <UsageStatistics>
+	       <UsageStatistic>
+	         <TimeRange>
+	           <Months>3</Months>
+	         </TimeRange>
+	         <Rank>
+	           <Value>25</Value>
+	           <Delta>0</Delta>
+	         </Rank>
+
+
+	     <ContributingSubdomains>
+	       <ContributingSubdomain>
+	         <DataUrl>images.google.de</DataUrl>
+	         <DataUrl>translate.google.de</DataUrl>
+
+	*/
+
 }
 
-type TRank struct {
-	Value string `xml:",chardata"`
+type Rank struct {
+	Id   int    `db:"rank_id, primarykey, autoincrement"`
+	Name string `db:"domain_name, size:200, not null"` // unique with SetUnique
 
-	Code      string `xml:"Code,attr"`
-	Rank      string `xml:"Rank"`
-	PageViews string `xml:"Contribution>PageViews"`
-	Users     string `xml:"Contribution>Users"`
+	Code        string `xml:"Code,attr" db:"rank_code, size:10, not null"`
+	CountryRank string `xml:"Rank" db:"rank_rank, size:10, not null"`
+	PageViews   string `xml:"Contribution>PageViews" db:"rank_pageviews, size:20, not null"`
+	Users       string `xml:"Contribution>Users" db:"rank_users, size:20, not null"`
 }

@@ -12,18 +12,20 @@ import (
 	"github.com/zew/awis/logx"
 )
 
-var funcMap1 = template.FuncMap{
+// var funcMap1 = template.FuncMap{
+// 	"pref":  Pref,
+// 	"title": strings.Title,
+// 	"toJS":  func(arg string) template.JS { return template.JS(arg) },
+// }
+
+// var funcMapAll2 = []template.FuncMap{
+// 	funcMap1,
+// }
+
+var funcMapAll = map[string]interface{}{
 	"pref":  Pref,
 	"title": strings.Title,
 	"toJS":  func(arg string) template.JS { return template.JS(arg) },
-}
-
-var funcMapAll = []template.FuncMap{
-	funcMap1,
-}
-
-var funcMapAll2 = map[string]interface{}{
-	"fmap1": funcMap1,
 }
 
 var irisConfig = config.Iris{}
