@@ -49,7 +49,7 @@ func ParseIntoContact(dat []byte) (mdl.Meta, []mdl.Rank, []mdl.Category, error) 
 func awisDomainInfo(c *iris.Context) {
 
 	var err error
-	var reqSigned *http.Request
+	reqSigned, _ := http.NewRequest("GET", Pref(), nil)
 	display := ""
 	respBytes := []byte{}
 
@@ -59,6 +59,10 @@ func awisDomainInfo(c *iris.Context) {
 	count := int(startCn)
 	sites := []string{}
 	for i := start; i < start+count; i++ {
+
+		if util.EffectiveParam(c, "submit", "none") == "none" {
+			continue
+		}
 
 		site := mdl.Site{}
 		sql := `SELECT 
@@ -180,8 +184,8 @@ func awisDomainInfo(c *iris.Context) {
 		StructDump  template.HTML
 		StructDump2 template.HTML
 	}{
-		HTMLTitle:  AppName() + " result",
-		Title:      AppName() + " result",
+		HTMLTitle:  AppName() + " url infos",
+		Title:      AppName() + " url infos",
 		FlashMsg:   template.HTML("Alexa Web Information Service"),
 		URL:        reqSigned.URL.String(),
 		FormAction: PathDomainInfo,
@@ -193,7 +197,7 @@ func awisDomainInfo(c *iris.Context) {
 		StructDump2: template.HTML(display),
 	}
 
-	err = c.Render("index.html", s)
+	err = c.Render("form.html", s)
 	util.CheckErr(err)
 
 }

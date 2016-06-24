@@ -8,42 +8,11 @@
 	<a target="second" href="http://www.alexa.com/plans">Amazon Plan</a><br/>
 	<a target="second" href="http://s3.amazonaws.com/alexa-static/top-1m.csv.zip">Top Million across all countries</a><br/>
 
-	{{if ne .FlashMsg "" }}
-		<p style='font-size:14px;padding:8px;' class='flash-msg-area'>{{.FlashMsg}}</p>
+	<br/>
+	<br/>
+
+	{{ range $linktext, $url := .Links }}
+		<a target="second" href="{{ pref $url }}">{{ $linktext }}</a><br/>
 	{{end}}
-
-	<form action='{{ pref .FormAction }}'>
-		<input type="input"  name="Url"          id="Url"         value="{{.ParamUrl}}" >          <br />
-		<input type="input"  name="Start"        id="Start"       value="{{.ParamStart}}" >        <br />
-		<input type="input"  name="Count"        id="Count"       value="{{.ParamCount}}" >        <br />
-		<input type="input"  name="CountryCode"  id="CountryCode" value="{{.ParamCountryCode}}" >  <br />
-		<input type="submit" name="submit" id=""       value=" Submit " accesskey="s" >
-	</form>
-
-	{{if ne .URL "" }}
-		<a href='{{.URL}}'  target='second' >{{.URL}}</a><br>
-	{{end}}
-
-
-
-	<textarea cols='145' rows='144'>
-		{{ .StructDump }}
-	</textarea>
-
-	{{ if ne "" .StructDump2 }}
-		<textarea cols='145' rows='144'>
-			{{ .StructDump2 }}
-		</textarea>
-	{{end}}
-
-
 
 </div>
-
-
-<script type="text/javascript">
-	$( document ).ready(function() {
-		// $( '#tab-body input' ).filter(":visible").first().focus();
-		$( '#Url' ).focus();
-	});
-</script>
