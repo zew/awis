@@ -65,7 +65,10 @@ func DBMap(dbName ...string) *gorp.DbMap {
 		t := mp.AddTable(mdl.Site{})
 		t.ColMap("domain_name").SetUnique(true)
 		err = mp.CreateTables()
-		if err == nil {
+		err = mp.CreateTables()
+		if err != nil {
+			logx.Printf("error creating table: %v", err)
+		} else {
 			mp.CreateIndex()
 		}
 	}
@@ -75,7 +78,10 @@ func DBMap(dbName ...string) *gorp.DbMap {
 		t := mp.AddTable(mdl.Meta{})
 		t.ColMap("domain_name").SetUnique(true)
 		err = mp.CreateTables()
-		if err == nil {
+		err = mp.CreateTables()
+		if err != nil {
+			logx.Printf("error creating table: %v", err)
+		} else {
 			mp.CreateIndex()
 		}
 	}
@@ -87,7 +93,22 @@ func DBMap(dbName ...string) *gorp.DbMap {
 		// t.AddIndex("idx_name_desc", "Btree", []string{"domain_name", "rank_code"})
 		t.SetUniqueTogether("domain_name", "rank_code")
 		err = mp.CreateTables()
-		if err == nil {
+		err = mp.CreateTables()
+		if err != nil {
+			logx.Printf("error creating table: %v", err)
+		} else {
+			mp.CreateIndex()
+		}
+	}
+
+	{
+		mp := IndependentDbMapper(db)
+		t := mp.AddTable(mdl.Category{})
+		t.SetUniqueTogether("domain_name", "category_path")
+		err = mp.CreateTables()
+		if err != nil {
+			logx.Printf("error creating table: %v", err)
+		} else {
 			mp.CreateIndex()
 		}
 	}
@@ -95,6 +116,7 @@ func DBMap(dbName ...string) *gorp.DbMap {
 	dbmap = IndependentDbMapper(db)
 	dbmap.AddTable(mdl.Meta{})
 	dbmap.AddTable(mdl.Rank{})
+	dbmap.AddTable(mdl.Category{})
 
 	// dbmap.TraceOn("gx-", logx.Get())
 	err = dbmap.CreateTables()
@@ -118,7 +140,6 @@ func CreateRumpData() {
 	pg1 := mdl.Site{}
 	pg1.Id = 1 // ignored anyway
 	pg1.Name = "dummy.org"
-	pg1.Label = "Some dummy label"
 	err := DBMap().Insert(&pg1)
 	util.CheckErr(err)
 

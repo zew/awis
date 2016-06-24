@@ -1,10 +1,8 @@
 package mdl
 
 type Site struct {
-	Id                         int     `db:"domain_id, primarykey, autoincrement"`
+	Id                         int     `db:"site_id, primarykey, autoincrement"`
 	Name                       string  `xml:"DataUrl" db:"domain_name, size:200, not null"` // unique with SetUnique
-	Label                      string  `db:"domain_label, size:200, not null"`
-	Description                string  `db:"domain_description, size:200, not null"`
 	GlobalRank                 int     `xml:"Global>Rank" db:"global_rank, not null"`
 	CountryRank                int     `xml:"Country>Rank" db:"country_rank, not null"`
 	CountryReachPerMillion     float64 `xml:"Country>Reach>PerMillion" db:"country_reach_permillion, not null"`
@@ -30,11 +28,9 @@ type Meta struct {
 	Locale   string `xml:"ContentData>Language>Locale" db:"meta_locale, size:10, not null"`
 	Encoding string `xml:"ContentData>Language>Encoding" db:"meta_encoding, size:20, not null"`
 
-	CategoryTitle string `xml:"Related>Categories>CategoryData>Title" db:"meta_categorytitle, size:200, not null"`
-	CategoryPath  string `xml:"Related>Categories>CategoryData>AbsolutePath" db:"meta_categorypath, size:200, not null"`
-
-	// Into separate struct:
-	// Ranks []Rank `xml:"TrafficData>RankByCountry>Country"`
+	// Into separate struct - 1:n slice:
+	// Ranks      []Rank         `xml:"TrafficData>RankByCountry>Country"`
+	// Categories []mdl.Category `xml:"Response>UrlInfoResult>Alexa>Related>Categories"`
 
 	/*
 	     <LinksInCount>159636</LinksInCount>
@@ -87,4 +83,12 @@ type Rank struct {
 	CountryRank string `xml:"Rank" db:"rank_rank, size:10, not null"`
 	PageViews   string `xml:"Contribution>PageViews" db:"rank_pageviews, size:20, not null"`
 	Users       string `xml:"Contribution>Users" db:"rank_users, size:20, not null"`
+}
+
+type Category struct {
+	Id   int    `db:"category_id, primarykey, autoincrement"`
+	Name string `db:"domain_name, size:200, not null"` // unique with SetUnique
+
+	Title string `xml:"Title" db:"category_title, size:200, not null"`
+	Path  string `xml:"AbsolutePath" db:"category_path, size:255, not null"`
 }

@@ -18,92 +18,152 @@ import (
 	"github.com/zew/awis/util"
 )
 
-func ParseIntoContact(dat []byte) (mdl.Meta, []mdl.Rank, error) {
+func ParseIntoContact(dat []byte) (mdl.Meta, []mdl.Rank, []mdl.Category, error) {
 	type Result struct {
 		Contact mdl.Meta `xml:"Response>UrlInfoResult>Alexa"` // omit the outmost tag name TopSitesResponse
 	}
 	type ResRanks struct {
 		Ranks []mdl.Rank `xml:"Response>UrlInfoResult>Alexa>TrafficData>RankByCountry>Country"`
 	}
+	type ResCats struct {
+		Categories []mdl.Category `xml:"Response>UrlInfoResult>Alexa>Related>Categories>CategoryData"`
+	}
 	res1 := Result{}
 	err := xml.Unmarshal(dat, &res1)
 	if err != nil {
-		return res1.Contact, nil, err
+		return res1.Contact, nil, nil, err
 	}
 	res2 := ResRanks{}
 	err = xml.Unmarshal(dat, &res2)
 	if err != nil {
-		return res1.Contact, nil, err
+		return res1.Contact, nil, nil, err
 	}
-	return res1.Contact, res2.Ranks, nil
+	res3 := ResCats{}
+	err = xml.Unmarshal(dat, &res3)
+	if err != nil {
+		return res1.Contact, nil, nil, err
+	}
+	return res1.Contact, res2.Ranks, res3.Categories, nil
 }
 
 func awisDomainInfo(c *iris.Context) {
 
 	var err error
+	var reqSigned *http.Request
+	display := ""
+	respBytes := []byte{}
 
-	myUrl := url.URL{}
-	var ServiceHost2 = "awis.amazonaws.com"
-	myUrl.Host = ServiceHost2
-	myUrl.Scheme = "http"
-	logx.Printf("host is %v", myUrl.String())
+	startFl, _ := util.EffectiveParamFloat(c, "Start", 1.0)
+	startCn, _ := util.EffectiveParamFloat(c, "Count", 5.0)
+	start := int(startFl)
+	count := int(startCn)
+	sites := []string{}
+	for i := start; i < start+count; i++ {
 
-	vals := map[string]string{
-		"Action":           "UrlInfo",
-		"AWSAccessKeyId":   util.EnvVar("AWS_ACCESS_KEY_ID"),
-		"SignatureMethod":  "HmacSHA256",
-		"SignatureVersion": "2",
-		"Timestamp":        iso8601Timestamp(),
-		// "Signature" : "will be added by awsauth.Sign2(req)"
-		"ResponseGroup": "RelatedLinks,Categories,RankByCountry,UsageStats,AdultContent,Speed,Language,OwnedDomains,LinksInCount,SiteData,ContactInfo",
-		"Url":           util.EffectiveParam(c, "Url", "wwww.zew.de"),
+		site := mdl.Site{}
+		sql := `SELECT 
+		      site_id
+			, domain_name
+			, global_rank
+			, country_rank
+		FROM 			` + gorpx.TableName(mdl.Site{}) + ` t1
+		WHERE 			1=1
+				AND		site_id = :site_id
+			`
+		args := map[string]interface{}{
+			"site_id": i,
+		}
+		err = gorpx.DBMap().SelectOne(&site, sql, args)
+		util.CheckErr(err)
+		// c.Text(200, fmt.Sprintf("%v - %+v\n\n", i, site))
+		sites = append(sites, site.Name)
+
 	}
 
-	queryStr := ""
-	for k, v := range vals {
-		queryStr += fmt.Sprintf("%v=%v&", k, v)
-	}
-	logx.Printf("queryStr is %v", queryStr)
+	logx.Printf("sites are %v", sites)
 
-	strUrl := myUrl.String() + "/?" + queryStr
-	req, err := http.NewRequest("GET", strUrl, nil)
-	util.CheckErr(err)
-	// logx.Printf("req is %v", req)
+	// return
 
-	awsauth.Sign2(req)
-	reqSigned := req
+	for _, site := range sites {
 
-	resp, err := httpClient().Do(reqSigned)
-	util.CheckErr(err)
-	defer resp.Body.Close()
+		myUrl := url.URL{}
+		var ServiceHost2 = "awis.amazonaws.com"
+		myUrl.Host = ServiceHost2
+		myUrl.Scheme = "http"
+		logx.Printf("host is %v", myUrl.String())
 
-	respBytes, err := ioutil.ReadAll(resp.Body)
-	util.CheckErr(err)
-	// target := html.EscapeString(string(respBytes))
+		vals := map[string]string{
+			"Action":           "UrlInfo",
+			"AWSAccessKeyId":   util.EnvVar("AWS_ACCESS_KEY_ID"),
+			"SignatureMethod":  "HmacSHA256",
+			"SignatureVersion": "2",
+			"Timestamp":        iso8601Timestamp(),
+			// "Signature" : "will be added by awsauth.Sign2(req)"
+			"ResponseGroup": "RelatedLinks,Categories,RankByCountry,UsageStats,AdultContent,Speed,Language,OwnedDomains,LinksInCount,SiteData,ContactInfo",
 
-	contact, ranks, err := ParseIntoContact(respBytes)
-	if err != nil {
-		c.Text(200, err.Error())
-		return
-	}
+			"Url": site,
+			// "Url":           util.EffectiveParam(c, "Url", "wwww.zew.de"),
+		}
 
-	err = gorpx.DBMap().Insert(&contact)
-	if err != nil {
-		c.Text(200, err.Error())
-	} else {
-		for _, rank := range ranks {
-			rank.Name = contact.Name
-			err = gorpx.DBMap().Insert(&rank)
-			if err != nil {
-				c.Text(200, err.Error())
-				break
+		queryStr := ""
+		for k, v := range vals {
+			queryStr += fmt.Sprintf("%v=%v&", k, v)
+		}
+		logx.Printf("queryStr is %v", queryStr)
+
+		strUrl := myUrl.String() + "/?" + queryStr
+		req, err := http.NewRequest("GET", strUrl, nil)
+		util.CheckErr(err)
+		// logx.Printf("req is %v", req)
+
+		awsauth.Sign2(req)
+		reqSigned = req
+
+		resp, err := httpClient().Do(reqSigned)
+		util.CheckErr(err)
+		defer resp.Body.Close()
+
+		respBytes, err = ioutil.ReadAll(resp.Body)
+		util.CheckErr(err)
+		// target := html.EscapeString(string(respBytes))
+
+		contact, ranks, categories, err := ParseIntoContact(respBytes)
+		if err != nil {
+			c.Text(200, err.Error())
+			return
+		}
+
+		err = gorpx.DBMap().Insert(&contact)
+		if err != nil {
+			c.Text(200, err.Error())
+		} else {
+			for rankRecordIdx, rank := range ranks {
+				rank.Name = contact.Name
+				err = gorpx.DBMap().Insert(&rank)
+				if err != nil {
+					c.Text(200, err.Error())
+					break
+				}
+				if rankRecordIdx > 20 {
+					break // max five ranks from top to bottom
+				}
+			}
+			for catRecordIdx, cat := range categories {
+				cat.Name = contact.Name
+				err = gorpx.DBMap().Insert(&cat)
+				if err != nil {
+					c.Text(200, err.Error())
+					break
+				}
+				if catRecordIdx > 4 {
+					break // max five cats
+				}
 			}
 		}
-	}
 
-	display := util.IndentedDump(contact)
-	display = display + "\n" + util.IndentedDump(ranks)
-	// c.Text(200, display)
+		display = util.IndentedDump(contact) + "\n" + util.IndentedDump(ranks) + "\n" + util.IndentedDump(categories)
+		// c.Text(200, display)
+	}
 
 	s := struct {
 		HTMLTitle string
@@ -126,6 +186,8 @@ func awisDomainInfo(c *iris.Context) {
 		URL:        reqSigned.URL.String(),
 		FormAction: PathDomainInfo,
 		ParamUrl:   util.EffectiveParam(c, "Url", "www.zew.de"),
+		ParamStart: util.EffectiveParam(c, "Start", "1"),
+		ParamCount: util.EffectiveParam(c, "Count", "5"),
 
 		StructDump:  template.HTML(string(respBytes)),
 		StructDump2: template.HTML(display),
