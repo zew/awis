@@ -23,7 +23,9 @@ func EnvVar(key string) string {
 		}
 	}
 	if !found {
-		log.Printf("\nProgram *requires* environment variable %q.\nExiting.\n", key)
+		log.Printf("----")
+		log.Printf("Program *requires* environment variable %q.\nExiting.", key)
+		log.Printf("----")
 		os.Exit(1)
 	}
 

@@ -34,6 +34,7 @@ var irisConfig = config.Iris{}
 func Pref(p ...string) string {
 	s := appcfg.Config.AppName
 	s = strings.ToLower(s)
+	s = strings.Replace(s, " ", "_", -1)
 	if len(p) > 0 {
 		return "/" + s + p[0]
 	}
