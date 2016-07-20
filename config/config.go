@@ -7,8 +7,8 @@ import (
 	"path"
 	"runtime"
 
-	"github.com/zew/awis/logx"
-	"github.com/zew/awis/util"
+	"github.com/zew/logx"
+	"github.com/zew/util"
 )
 
 type SQLHost struct {

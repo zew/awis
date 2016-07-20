@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/go-gorp/gorp"
 	"github.com/zew/awis/config"
-	"github.com/zew/awis/logx"
 	"github.com/zew/awis/mdl"
-	"github.com/zew/awis/util"
+	"github.com/zew/gorp"
+	"github.com/zew/logx"
+	"github.com/zew/util"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
@@ -93,7 +93,6 @@ func DBMap(dbName ...string) *gorp.DbMap {
 		// t.AddIndex("idx_name_desc", "Btree", []string{"domain_name", "rank_code"})
 		t.SetUniqueTogether("domain_name", "rank_code")
 		err = mp.CreateTables()
-		err = mp.CreateTables()
 		if err != nil {
 			logx.Printf("error creating table: %v", err)
 		} else {
@@ -114,21 +113,12 @@ func DBMap(dbName ...string) *gorp.DbMap {
 	}
 
 	dbmap = IndependentDbMapper(db)
+	dbmap.AddTable(mdl.Site{})
 	dbmap.AddTable(mdl.Meta{})
 	dbmap.AddTable(mdl.Rank{})
 	dbmap.AddTable(mdl.Category{})
 
 	// dbmap.TraceOn("gx-", logx.Get())
-	err = dbmap.CreateTables()
-	if err != nil {
-		logx.Printf("tables already exist: %v", err)
-	} else {
-		err = dbmap.CreateIndex()
-		if err != nil {
-			logx.Printf("error creating indize: %v", err)
-		}
-		// CreateRumpData()
-	}
 	dbmap.TraceOff()
 
 	return dbmap

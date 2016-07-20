@@ -9,7 +9,7 @@ import (
 
 	appcfg "github.com/zew/awis/config"
 	"github.com/zew/awis/gorpx"
-	"github.com/zew/awis/logx"
+	"github.com/zew/logx"
 )
 
 // var funcMap1 = template.FuncMap{

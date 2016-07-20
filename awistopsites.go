@@ -17,9 +17,9 @@ import (
 
 	"github.com/smartystreets/go-aws-auth"
 	"github.com/zew/awis/gorpx"
-	"github.com/zew/awis/logx"
 	"github.com/zew/awis/mdl"
-	"github.com/zew/awis/util"
+	"github.com/zew/logx"
+	"github.com/zew/util"
 )
 
 var awsSess *session.Session // not needed
