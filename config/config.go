@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path"
 	"runtime"
@@ -19,7 +18,7 @@ type SQLHost struct {
 	ConnectionParams map[string]string `json:"connection_params"`
 }
 
-type Config3 struct {
+type ConfigT struct {
 	Email        string             `json:"email"`
 	VersionMajor int                `json:"version_major"`
 	VersionMinor int                `json:"version_minor"`
@@ -28,17 +27,17 @@ type Config3 struct {
 	SQLHosts     map[string]SQLHost `json:"sql_hosts"`
 }
 
-var Config Config3
+var Config ConfigT
 
 func init() {
 
-	for _, v := range []string{"SQL_PW", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"} {
+	for _, v := range []string{"SQL_PW"} {
 		util.EnvVar(v)
 	}
 
-	pwd, err := os.Getwd()
+	workDir, err := os.Getwd()
 	util.CheckErr(err)
-	fmt.Println("pwd2: ", pwd)
+	logx.Println("workDir: ", workDir)
 
 	_, srcFile, _, ok := runtime.Caller(1)
 	if !ok {
@@ -46,14 +45,18 @@ func init() {
 	}
 
 	{
-		// file, err := os.Open(filepath.Join(pwd, "/config/config1.json"))
-		// file, err := os.Open("./config/config3.json")
-		file, err := os.Open(path.Join(path.Dir(srcFile), "config3.json"))
-		util.CheckErr(err)
+		fullP := path.Join(path.Dir(srcFile), "config.json")
+		file, err := os.Open(fullP)
+		if err != nil {
+			logx.Printf("could not find %v: %v", fullP, err)
+			file, err = os.Open("config.json")
+			util.CheckErr(err)
+		}
+
 		decoder := json.NewDecoder(file)
 		err = decoder.Decode(&Config)
 		util.CheckErr(err)
-		// logx.Printf("%#v", conf3)
+
 		logx.Printf("\n%#s", util.IndentedDump(Config))
 	}
 
