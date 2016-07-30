@@ -18,6 +18,7 @@ import (
 	"github.com/smartystreets/go-aws-auth"
 	"github.com/zew/awis/gorpx"
 	"github.com/zew/awis/mdl"
+	"github.com/zew/irisx"
 	"github.com/zew/logx"
 	"github.com/zew/util"
 )
@@ -78,7 +79,7 @@ func awisTopSites(c *iris.Context) {
 	display := ""
 	respBytes := []byte{}
 
-	if util.EffectiveParam(c, "submit", "none") != "none" {
+	if irisx.EffectiveParam(c, "submit", "none") != "none" {
 
 		var ServiceHost1 = "ats.amazonaws.com"
 
@@ -95,10 +96,10 @@ func awisTopSites(c *iris.Context) {
 			"Timestamp":        iso8601Timestamp(),
 			// "Signature" : "will be added by awsauth.Sign2(req)"
 			"ResponseGroup": "Country",
-			"Url":           util.EffectiveParam(c, "Url", "wwww.zew.de"),
-			"CountryCode":   util.EffectiveParam(c, "CountryCode", "DE"),
-			"Start":         util.EffectiveParam(c, "Start", "0"),
-			"Count":         util.EffectiveParam(c, "Count", "5"),
+			"Url":           irisx.EffectiveParam(c, "Url", "wwww.zew.de"),
+			"CountryCode":   irisx.EffectiveParam(c, "CountryCode", "DE"),
+			"Start":         irisx.EffectiveParam(c, "Start", "0"),
+			"Count":         irisx.EffectiveParam(c, "Count", "5"),
 		}
 
 		queryStr := ""
@@ -170,10 +171,10 @@ func awisTopSites(c *iris.Context) {
 		StructDump:       template.HTML(display),
 		URL:              reqSigned.URL.String(),
 		FormAction:       PathTopSites,
-		ParamUrl:         util.EffectiveParam(c, "Url", "www.zew.de"),
-		ParamStart:       util.EffectiveParam(c, "Start", "0"),
-		ParamCount:       util.EffectiveParam(c, "Count", "5"),
-		ParamCountryCode: util.EffectiveParam(c, "CountryCode", "DE"),
+		ParamUrl:         irisx.EffectiveParam(c, "Url", "www.zew.de"),
+		ParamStart:       irisx.EffectiveParam(c, "Start", "0"),
+		ParamCount:       irisx.EffectiveParam(c, "Count", "5"),
+		ParamCountryCode: irisx.EffectiveParam(c, "CountryCode", "DE"),
 	}
 
 	err = c.Render("form.html", s)

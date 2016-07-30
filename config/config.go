@@ -2,9 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	"os"
-	"path"
-	"runtime"
 
 	"github.com/zew/logx"
 	"github.com/zew/util"
@@ -35,29 +32,10 @@ func init() {
 		util.EnvVar(v)
 	}
 
-	workDir, err := os.Getwd()
+	fileReader := util.LoadConfig()
+	decoder := json.NewDecoder(fileReader)
+	err := decoder.Decode(&Config)
 	util.CheckErr(err)
-	logx.Println("workDir: ", workDir)
-
-	_, srcFile, _, ok := runtime.Caller(1)
-	if !ok {
-		logx.Fatalf("runtime caller not found")
-	}
-
-	{
-		fullP := path.Join(path.Dir(srcFile), "config.json")
-		file, err := os.Open(fullP)
-		if err != nil {
-			logx.Printf("could not find %v: %v", fullP, err)
-			file, err = os.Open("config.json")
-			util.CheckErr(err)
-		}
-
-		decoder := json.NewDecoder(file)
-		err = decoder.Decode(&Config)
-		util.CheckErr(err)
-
-		logx.Printf("\n%#s", util.IndentedDump(Config))
-	}
+	logx.Printf("\n%#s", util.IndentedDump(Config))
 
 }

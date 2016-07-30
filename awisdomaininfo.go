@@ -11,6 +11,7 @@ import (
 	"github.com/kataras/iris"
 
 	"github.com/zew/awis/gorpx"
+	"github.com/zew/irisx"
 
 	"github.com/smartystreets/go-aws-auth"
 	"github.com/zew/awis/mdl"
@@ -53,14 +54,14 @@ func awisDomainInfo(c *iris.Context) {
 	display := ""
 	respBytes := []byte{}
 
-	startFl, _ := util.EffectiveParamFloat(c, "Start", 1.0)
-	startCn, _ := util.EffectiveParamFloat(c, "Count", 5.0)
+	startFl, _, _ := irisx.EffectiveParamFloat(c, "Start", 1.0)
+	startCn, _, _ := irisx.EffectiveParamFloat(c, "Count", 5.0)
 	start := int(startFl)
 	count := int(startCn)
 	sites := []string{}
 	for i := start; i < start+count; i++ {
 
-		if util.EffectiveParam(c, "submit", "none") == "none" {
+		if irisx.EffectiveParam(c, "submit", "none") == "none" {
 			continue
 		}
 
@@ -106,7 +107,7 @@ func awisDomainInfo(c *iris.Context) {
 			"ResponseGroup": "RelatedLinks,Categories,RankByCountry,UsageStats,AdultContent,Speed,Language,OwnedDomains,LinksInCount,SiteData,ContactInfo",
 
 			"Url": site,
-			// "Url":           util.EffectiveParam(c, "Url", "wwww.zew.de"),
+			// "Url":           irisx.EffectiveParamIsSet(c, "Url", "wwww.zew.de"),
 		}
 
 		queryStr := ""
@@ -189,9 +190,9 @@ func awisDomainInfo(c *iris.Context) {
 		FlashMsg:   template.HTML("Alexa Web Information Service"),
 		URL:        reqSigned.URL.String(),
 		FormAction: PathDomainInfo,
-		ParamUrl:   util.EffectiveParam(c, "Url", "www.zew.de"),
-		ParamStart: util.EffectiveParam(c, "Start", "1"),
-		ParamCount: util.EffectiveParam(c, "Count", "5"),
+		ParamUrl:   irisx.EffectiveParam(c, "Url", "www.zew.de"),
+		ParamStart: irisx.EffectiveParam(c, "Start", "1"),
+		ParamCount: irisx.EffectiveParam(c, "Count", "5"),
 
 		StructDump:  template.HTML(string(respBytes)),
 		StructDump2: template.HTML(display),
