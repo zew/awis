@@ -1,45 +1,14 @@
 package main
 
 import (
-	"html/template"
-	"strings"
-
 	"github.com/kataras/iris"
-	"github.com/kataras/iris/config"
 
 	appcfg "github.com/zew/awis/config"
-	"github.com/zew/awis/gorpx"
+	"github.com/zew/awis/mdl"
+	"github.com/zew/gorpx"
+	"github.com/zew/irisx"
 	"github.com/zew/logx"
 )
-
-// var funcMap1 = template.FuncMap{
-// 	"pref":  Pref,
-// 	"title": strings.Title,
-// 	"toJS":  func(arg string) template.JS { return template.JS(arg) },
-// }
-
-// var funcMapAll2 = []template.FuncMap{
-// 	funcMap1,
-// }
-
-var funcMapAll = map[string]interface{}{
-	"pref":  Pref,
-	"title": strings.Title,
-	"toJS":  func(arg string) template.JS { return template.JS(arg) },
-}
-
-var irisConfig = config.Iris{}
-
-// The url path prefix
-func Pref(p ...string) string {
-	s := appcfg.Config.AppName
-	s = strings.ToLower(s)
-	s = strings.Replace(s, " ", "_", -1)
-	if len(p) > 0 {
-		return "/" + s + p[0]
-	}
-	return "/" + s
-}
 
 // The name of the application
 func AppName(p ...string) string {
@@ -51,28 +20,20 @@ func AppName(p ...string) string {
 }
 
 const (
-	PathTopSites   = "/awis-top-sites"
-	PathDomainInfo = "/awis-domain-info"
+	PathTopSites   = "/top-sites"
+	TrafficHistory = "/top-sites-batched"
+	PathDomainInfo = "/domain-info"
 )
 
 func main() {
 
-	// iris.Templates("./*.html")
+	i01 := iris.New(irisBaseConfig())
+	irisInctanceConfig(i01)
 
-	var renderOptions = config.Template{
-		Directory:  "templates",
-		Extensions: []string{".tmpl", ".html"},
-		// RequirePartials: true,
-		HTMLTemplate: config.HTMLTemplate{
-			Funcs: funcMapAll,
-		},
+	var keysToPersist = map[string]string{
+		"country": "DE",
 	}
-
-	irisConfig.Render.Template = renderOptions
-	irisConfig.Render.Template.Layout = "layout.html"
-
-	i01 := iris.New(irisConfig)
-	// i01 := iris.Custom(iris.StationOptions{})
+	irisx.ConfigSession(keysToPersist)
 
 	i01.Static(Pref("/js"), "./static/js/", 2)
 	// i01.Static("/js", "./static/js/", 1)
@@ -83,15 +44,96 @@ func main() {
 	i01.Get(Pref(""), index)
 	i01.Get(Pref("/"), index)
 
-	i01.Get(Pref(PathTopSites), awisTopSites)
 	i01.Get(Pref(PathDomainInfo), awisDomainInfo)
+	i01.Get(Pref(PathTopSites), topSites)
+	i01.Get(Pref(TrafficHistory), trafficHistory)
 	i01.Get(Pref("/xmlparse"), xmlparse)
 
+	//
+	//
 	logx.Printf("setting up mysql server...")
-	gorpx.DBMap()
+	gorpx.DB()
 	defer gorpx.DB().Close()
 
+	DDL()
+
+	gorpx.DBMapAddTable(mdl.Site{})
+	gorpx.DBMapAddTable(mdl.Meta{})
+	gorpx.DBMapAddTable(mdl.Rank{})
+	gorpx.DBMapAddTable(mdl.Category{})
+	gorpx.DBMapAddTable(mdl.TrafficHistory{})
+
 	logx.Printf("starting http server...")
-	logx.Fatal(i01.ListenWithErr(":8081"))
+	i01.Listen(":8080")
+
+}
+
+func DDL() {
+
+	var err error
+
+	{
+		mp := gorpx.IndependentDbMapper()
+		t := mp.AddTable(mdl.Site{})
+		t.ColMap("domain_name").SetUnique(true)
+		err = mp.CreateTables()
+		err = mp.CreateTables()
+		if err != nil {
+			logx.Printf("error creating table: %v", err)
+		} else {
+			mp.CreateIndex()
+		}
+	}
+
+	{
+		mp := gorpx.IndependentDbMapper()
+		t := mp.AddTable(mdl.Meta{})
+		t.ColMap("domain_name").SetUnique(true)
+		err = mp.CreateTables()
+		err = mp.CreateTables()
+		if err != nil {
+			logx.Printf("error creating table: %v", err)
+		} else {
+			mp.CreateIndex()
+		}
+	}
+
+	{
+		mp := gorpx.IndependentDbMapper()
+		t := mp.AddTable(mdl.Rank{})
+		// t.ColMap("domain_name").SetUnique(true)
+		// t.AddIndex("idx_name_desc", "Btree", []string{"domain_name", "rank_code"})
+		t.SetUniqueTogether("domain_name", "rank_code")
+		err = mp.CreateTables()
+		if err != nil {
+			logx.Printf("error creating table: %v", err)
+		} else {
+			mp.CreateIndex()
+		}
+	}
+
+	{
+		mp := gorpx.IndependentDbMapper()
+		t := mp.AddTable(mdl.Category{})
+		t.SetUniqueTogether("domain_name", "category_path")
+		err = mp.CreateTables()
+		if err != nil {
+			logx.Printf("error creating table: %v", err)
+		} else {
+			mp.CreateIndex()
+		}
+	}
+
+	{
+		mp := gorpx.IndependentDbMapper()
+		t := mp.AddTable(mdl.TrafficHistory{})
+		t.SetUniqueTogether("domain_name", "date")
+		err = mp.CreateTables()
+		if err != nil {
+			logx.Printf("error creating table: %v", err)
+		} else {
+			mp.CreateIndex()
+		}
+	}
 
 }

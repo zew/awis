@@ -10,7 +10,7 @@ import (
 
 	"github.com/kataras/iris"
 
-	"github.com/zew/awis/gorpx"
+	"github.com/zew/gorpx"
 	"github.com/zew/irisx"
 
 	"github.com/smartystreets/go-aws-auth"

@@ -1,0 +1,47 @@
+<div style='margin:0 20px;margin-top:20px;width: 80%;text-align:left;'>
+	
+	<p style='font-size:14px;margin-bottom:-2px;'>{{.Title}}</p>
+
+	<a href='http://docs.aws.amazon.com/AlexaWebInfoService/latest/index.html?ApiReference_UrlInfoAction.html' 
+	 target='second' >Based on this</a><br>
+
+
+
+	{{if ne .FlashMsg "" }}
+		<p style='font-size:14px;padding:8px;' class='flash-msg-area'>{{.FlashMsg}}</p>
+	{{end}}
+
+	<form action='{{ pref .FormAction }}'>
+		<input type="input"  name="Start"        id="Start"       value="{{.ParamStart}}" >       <br />
+		<input type="input"  name="Count"        id="Count"       value="{{.ParamCount}}" >       <br />
+		<input type="input"  name="DateBegin"    id="DateBegin"   value="{{.ParamDateBegin}}"  >  <br />
+		<input type="submit" name="submit"       id=""            value=" Submit " accesskey="s" >
+	</form>
+
+	{{if ne .URL "" }}
+		<a href='{{.URL}}'  target='second' >{{.URL}}</a><br>
+	{{end}}
+
+
+	{{if ne .StructDump "" }}
+		<br/>
+		<div cols='145' rows='32' style='width: 90%; 
+				white-space: pre-line;
+				white-space: pre;
+				'
+		>{{ .StructDump }}</div>
+	{{end}}
+
+
+
+
+
+</div>
+
+
+<script type="text/javascript">
+	$( document ).ready(function() {
+		// $( '#tab-body input' ).filter(":visible").first().focus();
+		$( '#Url' ).focus();
+	});
+</script>

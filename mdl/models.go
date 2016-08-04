@@ -92,3 +92,13 @@ type Category struct {
 	Title string `xml:"Title" db:"category_title, size:200, not null"`
 	Path  string `xml:"AbsolutePath" db:"category_path, size:255, not null"`
 }
+
+type TrafficHistory struct {
+	Id               int     `db:"site_id, primarykey, autoincrement"`
+	Site             string  `db:"domain_name, size:200, not null"`    // unique together wiht date
+	Date             string  `xml:"Date" db:"date, size:14, not null"` // unique together wiht date
+	PageViewsPerMio  float64 `xml:"PageViews>PerMillion" db:"pageviews_per_mio, not null"`
+	PageViewsPerUser float64 `xml:"PageViews>PerUser" db:"pageviews_per_user, not null"`
+	Rank             int     `xml:"Rank" db:"global_rank, not null"`
+	ReachPerMio      float64 `xml:"Reach>PerMillion" db:"country_reach_per_mio, not null"`
+}

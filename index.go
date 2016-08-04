@@ -8,8 +8,9 @@ import (
 func index(c *iris.Context) {
 
 	links := map[string]string{
-		"Top Sites":  PathTopSites,
-		"Site Infos": PathDomainInfo,
+		"Site Infos":      PathDomainInfo,
+		"Top Sites":       PathTopSites,
+		"Traffic History": TrafficHistory,
 	}
 
 	var err error

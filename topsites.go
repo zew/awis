@@ -16,8 +16,8 @@ import (
 	"github.com/kataras/iris"
 
 	"github.com/smartystreets/go-aws-auth"
-	"github.com/zew/awis/gorpx"
 	"github.com/zew/awis/mdl"
+	"github.com/zew/gorpx"
 	"github.com/zew/irisx"
 	"github.com/zew/logx"
 	"github.com/zew/util"
@@ -72,7 +72,7 @@ func ParseIntoSite(dat []byte) ([]mdl.Site, error) {
 	return result.Sites, nil
 }
 
-func awisTopSites(c *iris.Context) {
+func topSites(c *iris.Context) {
 
 	var err error
 	reqSigned, _ := http.NewRequest("GET", Pref(), nil)
