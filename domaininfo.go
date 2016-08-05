@@ -124,7 +124,7 @@ func awisDomainInfo(c *iris.Context) {
 		awsauth.Sign2(req)
 		reqSigned = req
 
-		resp, err := httpClient().Do(reqSigned)
+		resp, err := util.HttpClient().Do(reqSigned)
 		util.CheckErr(err)
 		defer resp.Body.Close()
 

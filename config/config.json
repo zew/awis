@@ -2,11 +2,11 @@
 	"email": "buchmann@zew.de",
 	"version_major": 0,
 	"version_minor": 81,
-	"app_name": "AWIS",
-	"sql_lite": false,
+	"app_name": "Alexa Web Information Service",
 	"sql_hosts": 
 	{ 
 		"dev":{
+	 		"type":    "mysql",
 	 		"user":    "pbberlin",
 	 		"hosa":    "127.0.0.1",
 	 		"host":    "10.8.1.215",

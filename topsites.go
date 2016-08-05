@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"net/url"
 	"time"
@@ -42,21 +41,6 @@ func iso8601Timestamp() string {
 	// gmdate("Y-m-d\TH:i:s.\\0\\0\\0\\Z", time())
 	logx.Printf("ts is %v", ts)
 	return ts
-}
-
-// Get a http client
-func httpClient() *http.Client {
-	var netTransport = &http.Transport{
-		Dial: (&net.Dialer{
-			Timeout: 5 * time.Second,
-		}).Dial,
-		TLSHandshakeTimeout: 5 * time.Second,
-	}
-	var netClient = &http.Client{
-		Timeout:   time.Second * 10,
-		Transport: netTransport,
-	}
-	return netClient
 }
 
 func ParseIntoSite(dat []byte) ([]mdl.Site, error) {
@@ -127,7 +111,7 @@ func topSites(c *iris.Context) {
 		}
 		reqSigned = req
 
-		resp, err := httpClient().Do(reqSigned)
+		resp, err := util.HttpClient().Do(reqSigned)
 		util.CheckErr(err)
 		defer resp.Body.Close()
 

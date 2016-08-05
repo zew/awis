@@ -93,22 +93,33 @@ func trafficHistory(c *iris.Context) {
 		awsauth.Sign2(req)
 		reqSigned = req
 
-		resp, err := httpClient().Do(reqSigned)
+		resp, err := util.HttpClient().Do(reqSigned)
 		util.CheckErr(err)
 		defer resp.Body.Close()
 
 		respBytes, err = ioutil.ReadAll(resp.Body)
-		util.CheckErr(err)
-
-		err = ioutil.WriteFile("./traffic-data.xml", respBytes, 0644)
-		util.CheckErr(err)
+		if err != nil {
+			str := fmt.Sprintf("%v: Error reading body: %v\n\n", site.Name, err)
+			logx.Print(str)
+			display = str + display
+			continue
+		}
 
 		type TrafHistories struct {
 			TrafficHistories []mdl.TrafficHistory `xml:"Response>TrafficHistoryResult>Alexa>TrafficHistory>HistoricalData>Data"`
 		}
 		trafHists := TrafHistories{}
 		err = xml.Unmarshal(respBytes, &trafHists)
-		util.CheckErr(err)
+		if err != nil {
+			str := fmt.Sprintf("Error unmarschalling bytes for %v - size -%v-   - error %v\n\n", site.Name, len(respBytes), err)
+			logx.Print(str)
+			display = str + display
+
+			err = ioutil.WriteFile("./traffic-data-"+site.Name+".xml", respBytes, 0644)
+			util.CheckErr(err)
+
+			continue
+		}
 
 		for _, oneHist := range trafHists.TrafficHistories {
 			oneHist.Site = site.Name

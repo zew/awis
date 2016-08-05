@@ -99,6 +99,6 @@ type TrafficHistory struct {
 	Date             string  `xml:"Date" db:"date, size:14, not null"` // unique together wiht date
 	PageViewsPerMio  float64 `xml:"PageViews>PerMillion" db:"pageviews_per_mio, not null"`
 	PageViewsPerUser float64 `xml:"PageViews>PerUser" db:"pageviews_per_user, not null"`
-	Rank             int     `xml:"Rank" db:"global_rank, not null"`
+	Rank             float64 `xml:"Rank" db:"global_rank, not null"` // dont ask me why the rank is sometimes not an integer - but it IS
 	ReachPerMio      float64 `xml:"Reach>PerMillion" db:"country_reach_per_mio, not null"`
 }

@@ -4,3 +4,4 @@ setenv.bat
 setenv*.bat
 *.exe
 tmp/*
+traffic-data-*.xml

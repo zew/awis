@@ -52,7 +52,7 @@ func main() {
 	//
 	//
 	logx.Printf("setting up mysql server...")
-	gorpx.DB()
+	gorpx.DB(appcfg.Config.SQLHosts)
 	defer gorpx.DB().Close()
 
 	DDL()
@@ -64,7 +64,7 @@ func main() {
 	gorpx.DBMapAddTable(mdl.TrafficHistory{})
 
 	logx.Printf("starting http server...")
-	i01.Listen(":8080")
+	i01.Listen(":8081")
 
 }
 
