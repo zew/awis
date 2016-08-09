@@ -73,10 +73,10 @@ func trafficHistory(c *iris.Context) {
 			// "Signature" : "will be added by awsauth.Sign2(req)"
 			"ResponseGroup": "History",
 
-			"Url": site.Name,
-
-			"Start": irisx.EffectiveParam(c, "DateBegin", "20150101"),
-			"Range": "31",
+			"Url":         site.Name,
+			"CountryCode": irisx.EffectiveParam(c, "CountryCode", "DE"), // has no effect :(
+			"Start":       irisx.EffectiveParam(c, "DateBegin", "20150101"),
+			"Range":       "31",
 		}
 
 		queryStr := ""
