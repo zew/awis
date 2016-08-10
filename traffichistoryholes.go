@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/kataras/iris"
@@ -27,9 +28,8 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 	respBytes := []byte{}
 
 	start, _, _ := irisx.EffectiveParamInt(c, "Start", 0)
-	_ = start
 	count, _, _ := irisx.EffectiveParamInt(c, "Count", 5)
-	granularity, _, _ := irisx.EffectiveParamInt(c, "Granularity", 10)
+	granularity, _, _ := irisx.EffectiveParamInt(c, "Granularity", 5)
 	dateBegin := irisx.EffectiveParam(c, "DateBegin", "20150101")
 
 	sites := []mdl.Site{
@@ -54,29 +54,55 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 		{Name: "lernhelfer.de"},
 		{Name: "moneyhouse.de"},
 		{Name: "nurxxx.mobi"},
+		{Name: "onedio.com"},
+		{Name: "pckeeper.software"},
 		{Name: "playoverwatch.com"},
 		{Name: "pussyspace.com"},
 		{Name: "rock-am-ring.com"},
 		{Name: "spotscenered.info"},
+		{Name: "shadbase.com"},
 		{Name: "tvnow.de"},
 		{Name: "wahnsinn.tv"},
 		{Name: "wiocha.pl"},
 	}
 
+	sites = sites[0:3]
+
 	logx.Printf("sites are %v", sites)
 
 	for _, site := range sites {
 
-		for i := 0; i < count; i += granularity {
+		display += site.Name + "\n"
 
-			allSteps := dayStepsFromString(dateBegin, i)
-			lastStep := allSteps[len(allSteps)-1]
+		for i := start; i < count; i += granularity {
+
+			allDatesAws, allDatesSql := dayStepsFromString(dateBegin, i, granularity)
+
+			datesSql := "'" + strings.Join(allDatesSql, "', '") + "'"
+
+			logx.Printf("datesSql are %v", datesSql)
+
+			existingRecords, err := gorpx.DBMap().SelectInt(
+				"SELECT count(*) FROM "+gorpx.TableName(mdl.Site{})+
+					" WHERE domain_name = :site AND date IN ("+datesSql+")				",
+				map[string]interface{}{
+					"site": site.Name,
+				},
+			)
+
+			display += fmt.Sprintf("found %v sql records for %v (%v)\n", existingRecords, site.Name, datesSql)
+			if existingRecords >= int64(granularity) {
+				continue
+			}
+
+			// lastStep := allDatesAWS[len(allDatesAWS)-1]
+			firstStep := allDatesAws[0]
 
 			myUrl := url.URL{}
 			var ServiceHost2 = "awis.amazonaws.com"
 			myUrl.Host = ServiceHost2
 			myUrl.Scheme = "http"
-			logx.Printf("host is %v", myUrl.String())
+			// logx.Printf("host is %v", myUrl.String())
 
 			vals := map[string]string{
 				"Action":           "TrafficHistory",
@@ -89,7 +115,7 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 
 				"Url":         site.Name,
 				"CountryCode": irisx.EffectiveParam(c, "CountryCode", "DE"), // has no effect :(
-				"Start":       lastStep,
+				"Start":       firstStep,
 				"Range":       fmt.Sprintf("%v", granularity),
 			}
 
@@ -97,7 +123,7 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 			for k, v := range vals {
 				queryStr += fmt.Sprintf("%v=%v&", k, v)
 			}
-			logx.Printf("queryStr is %v", queryStr)
+			// logx.Printf("queryStr is %v", queryStr)
 
 			strUrl := myUrl.String() + "/?" + queryStr
 			req, err := http.NewRequest("GET", strUrl, nil)
@@ -119,24 +145,21 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 				continue
 			}
 
-			type TrafHistories struct {
-				TrafficHistories []mdl.TrafficHistory `xml:"Response>TrafficHistoryResult>Alexa>TrafficHistory>HistoricalData>Data"`
-			}
-			trafHists := TrafHistories{}
+			trafHists := mdl.TrafHistories{}
 			err = xml.Unmarshal(respBytes, &trafHists)
 			if err != nil {
 				str := fmt.Sprintf("Error unmarschalling bytes for %v - size -%v-   - error %v\n\n", site.Name, len(respBytes), err)
 				logx.Print(str)
 				display = str + display
-
-				err = ioutil.WriteFile("./traffic-data-"+site.Name+".xml", respBytes, 0644)
-				util.CheckErr(err)
-
+				// err = ioutil.WriteFile("./traffic-data-"+site.Name+".xml", respBytes, 0644)
+				// util.CheckErr(err)
 				continue
 			}
 
-			for _, oneHist := range trafHists.TrafficHistories {
+			display += fmt.Sprintf("found %v xml traffic history nodes for %v\n", len(trafHists.TrafficHistories), firstStep)
+			for idx, oneHist := range trafHists.TrafficHistories {
 				oneHist.Site = site.Name
+				trafHists.TrafficHistories[idx].Site = site.Name
 				err = gorpx.DBMap().Insert(&oneHist)
 				util.CheckErr(err, "duplicate entry")
 			}
@@ -167,9 +190,10 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 
 		URL: reqSigned.URL.String(),
 
-		FormAction: TrafficHistory,
+		FormAction: TrafficHistoryFillMissingHoles,
 
-		ParamCount:     irisx.EffectiveParam(c, "Granularity", "10"),
+		ParamStart:     irisx.EffectiveParam(c, "Start", "0"),
+		ParamCount:     irisx.EffectiveParam(c, "Count", "10"),
 		ParamDateBegin: irisx.EffectiveParam(c, "DateBegin", "20150101"),
 
 		StructDump: template.HTML(display),
@@ -182,38 +206,30 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 
 // usage:
 // fmt.Printf("%+v", dayStepsFromString("20150125",10) )
-func dayStepsFromString(strDate string, numberOfDays int) []string {
+func dayStepsFromString(strDate string, start, numberOfDays int) ([]string, []string) {
 
 	date, err := time.Parse("20060102", strDate)
-
 	if err != nil {
 		logx.Fatal("we want format '20060102' ")
 	}
 
-	return daySteps(date.Year(), date.Month(), date.Day(), numberOfDays)
-}
+	ret1 := make([]string, 0, numberOfDays)
+	ret2 := make([]string, 0, numberOfDays)
 
-// usage:
-// fmt.Printf("%+v", daySteps(2015,01,25,10) )
-func daySteps(
-	year1 int, month1 time.Month, day1 int,
-	numberOfDays int,
-) []string {
-
-	ret := make([]string, 0, numberOfDays)
-
-	for i := 0; i < numberOfDays; i++ {
+	for i := start; i < start+numberOfDays; i++ {
 
 		d1 := time.Date(
-			year1, month1, day1+i,
+			date.Year(), date.Month(), date.Day()+i,
 			0, 0, 0, 0, time.UTC,
 		)
-		str1 := d1.Format("2006-01-02")
-		str1 = d1.Format("20060102")
+		str1 := d1.Format("20060102")
+		str2 := d1.Format("2006-01-02")
 
-		ret = append(ret, str1)
+		ret1 = append(ret1, str1)
+		ret2 = append(ret2, str2)
 
 	}
 	// return int(d2.Sub(d1) / (24 * time.Hour))
-	return ret
+	return ret1, ret2
+
 }

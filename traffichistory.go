@@ -105,10 +105,7 @@ func trafficHistory(c *iris.Context) {
 			continue
 		}
 
-		type TrafHistories struct {
-			TrafficHistories []mdl.TrafficHistory `xml:"Response>TrafficHistoryResult>Alexa>TrafficHistory>HistoricalData>Data"`
-		}
-		trafHists := TrafHistories{}
+		trafHists := mdl.TrafHistories{}
 		err = xml.Unmarshal(respBytes, &trafHists)
 		if err != nil {
 			str := fmt.Sprintf("Error unmarschalling bytes for %v - size -%v-   - error %v\n\n", site.Name, len(respBytes), err)

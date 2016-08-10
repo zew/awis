@@ -102,3 +102,7 @@ type TrafficHistory struct {
 	Rank             float64 `xml:"Rank" db:"global_rank, not null"` // dont ask me why the rank is sometimes not an integer - but it IS
 	ReachPerMio      float64 `xml:"Reach>PerMillion" db:"country_reach_per_mio, not null"`
 }
+
+type TrafHistories struct {
+	TrafficHistories []TrafficHistory `xml:"Response>TrafficHistoryResult>Alexa>TrafficHistory>HistoricalData>Data"`
+}
