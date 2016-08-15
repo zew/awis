@@ -29,7 +29,7 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 
 	start, _, _ := irisx.EffectiveParamInt(c, "Start", 0)
 	count, _, _ := irisx.EffectiveParamInt(c, "Count", 5)
-	granularity, _, _ := irisx.EffectiveParamInt(c, "Granularity", 5)
+	granularity, _, _ := irisx.EffectiveParamInt(c, "Granularity", 1)
 	dateBegin := irisx.EffectiveParam(c, "DateBegin", "20150101")
 
 	sites := []mdl.Site{
@@ -39,6 +39,8 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 		{Name: "alexa.com"},
 		{Name: "bidverdrd.com"},
 		{Name: "cine.to"},
+		{Name: "cakepornvids.com"},
+		{Name: "cloudzonetrk.com"},
 		{Name: "csgohouse.com"},
 		{Name: "dirty-time.net"},
 		{Name: "dw.com"},
@@ -46,33 +48,59 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 		{Name: "eurowings.com"},
 		{Name: "freepornx.org"},
 		{Name: "futwatch.com"},
+		{Name: "fussball-em-2016.com"},
+		{Name: "gogoanime.io"},
 		{Name: "heftig.de"},
 		{Name: "hespress.com"},
 		{Name: "henkel-lifetimes.de"},
 		{Name: "hotmovs.com"},
 		{Name: "just4single.com"},
+		{Name: "labymod.net"},
 		{Name: "lernhelfer.de"},
+		{Name: "magentacloud.de"},
 		{Name: "moneyhouse.de"},
+		{Name: "netbet.de"},
 		{Name: "nurxxx.mobi"},
 		{Name: "onedio.com"},
+		{Name: "ontests.me"},
 		{Name: "pckeeper.software"},
 		{Name: "playoverwatch.com"},
 		{Name: "pussyspace.com"},
 		{Name: "rock-am-ring.com"},
+		{Name: "relink.to"},
 		{Name: "spotscenered.info"},
 		{Name: "shadbase.com"},
 		{Name: "tvnow.de"},
+		{Name: "vicomi.com"},
+		{Name: "vidaxl.de"},
 		{Name: "wahnsinn.tv"},
 		{Name: "wiocha.pl"},
+		{Name: "xxxstreams.org"},
 	}
 
-	sites = sites[0:3]
+	// sites = sites[0:3]
 
 	logx.Printf("sites are %v", sites)
 
-	for _, site := range sites {
+	for idxSite, site := range sites {
 
+		if irisx.EffectiveParam(c, "submit", "none") == "none" {
+			break
+		}
 		display += site.Name + "\n"
+
+		allExistingRecords, err := gorpx.DBMap().SelectInt(
+			"SELECT count(*) FROM "+gorpx.TableName(mdl.TrafficHistory{})+" WHERE domain_name = :site ",
+			map[string]interface{}{
+				"site": site.Name,
+			},
+		)
+		util.CheckErr(err)
+		sites[idxSite].GlobalRank = int(allExistingRecords)
+		if allExistingRecords < 20 {
+			display += fmt.Sprintf("    only %v records - we skip\n", allExistingRecords)
+			continue
+		}
 
 		for i := start; i < count; i += granularity {
 
@@ -82,18 +110,23 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 
 			logx.Printf("datesSql are %v", datesSql)
 
+			sql := "SELECT count(*) FROM " + gorpx.TableName(mdl.TrafficHistory{}) +
+				" WHERE domain_name = :site AND date IN (" + datesSql + ")				"
+
 			existingRecords, err := gorpx.DBMap().SelectInt(
-				"SELECT count(*) FROM "+gorpx.TableName(mdl.Site{})+
-					" WHERE domain_name = :site AND date IN ("+datesSql+")				",
+				sql,
 				map[string]interface{}{
 					"site": site.Name,
 				},
 			)
+			util.CheckErr(err)
 
-			display += fmt.Sprintf("found %v sql records for %v (%v)\n", existingRecords, site.Name, datesSql)
 			if existingRecords >= int64(granularity) {
 				continue
 			}
+			continue
+
+			display += fmt.Sprintf("found only %v sql records for %v (%v)\n", existingRecords, site.Name, datesSql)
 
 			// lastStep := allDatesAWS[len(allDatesAWS)-1]
 			firstStep := allDatesAws[0]
@@ -167,6 +200,10 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 			display += util.IndentedDump(trafHists) + "\n"
 			// c.Text(200, display)
 		}
+	}
+
+	for idx, site := range sites {
+		display += fmt.Sprintf("%2v - %3v  %-44v\n", idx, site.GlobalRank, site.Name)
 	}
 
 	s := struct {
