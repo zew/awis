@@ -1,12 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
+	"regexp"
+	"time"
 
 	"github.com/kataras/iris"
 
@@ -19,9 +23,9 @@ import (
 	"github.com/zew/util"
 )
 
-func ParseIntoContact(dat []byte) (mdl.Meta, []mdl.Rank, []mdl.Category, error) {
+func ParseIntoStructs(dat []byte) (mdl.Meta, []mdl.Rank, []mdl.Category, error) {
 	type Result struct {
-		Contact mdl.Meta `xml:"Response>UrlInfoResult>Alexa"` // omit the outmost tag name TopSitesResponse
+		Meta mdl.Meta `xml:"Response>UrlInfoResult>Alexa"` // omit the outmost tag name TopSitesResponse
 	}
 	type ResRanks struct {
 		Ranks []mdl.Rank `xml:"Response>UrlInfoResult>Alexa>TrafficData>RankByCountry>Country"`
@@ -29,22 +33,35 @@ func ParseIntoContact(dat []byte) (mdl.Meta, []mdl.Rank, []mdl.Category, error) 
 	type ResCats struct {
 		Categories []mdl.Category `xml:"Response>UrlInfoResult>Alexa>Related>Categories>CategoryData"`
 	}
+
 	res1 := Result{}
 	err := xml.Unmarshal(dat, &res1)
 	if err != nil {
-		return res1.Contact, nil, nil, err
+		return res1.Meta, nil, nil, err
 	}
 	res2 := ResRanks{}
 	err = xml.Unmarshal(dat, &res2)
 	if err != nil {
-		return res1.Contact, nil, nil, err
+		return res1.Meta, nil, nil, err
 	}
 	res3 := ResCats{}
 	err = xml.Unmarshal(dat, &res3)
 	if err != nil {
-		return res1.Contact, nil, nil, err
+		return res1.Meta, nil, nil, err
 	}
-	return res1.Contact, res2.Ranks, res3.Categories, nil
+	return res1.Meta, res2.Ranks, res3.Categories, nil
+}
+
+func ParseDeltas(dat []byte) ([]mdl.Delta, error) {
+	type ResDeltas struct {
+		Deltas []mdl.Delta `xml:"Response>UrlInfoResult>Alexa>TrafficData>UsageStatistics>UsageStatistic"`
+	}
+	res4 := ResDeltas{}
+	err := xml.Unmarshal(dat, &res4)
+	if err != nil {
+		return nil, err
+	}
+	return res4.Deltas, nil
 }
 
 func awisDomainInfo(c *iris.Context) {
@@ -52,6 +69,7 @@ func awisDomainInfo(c *iris.Context) {
 	var err error
 	reqSigned, _ := http.NewRequest("GET", Pref(), nil)
 	display := ""
+	errors := ""
 	respBytes := []byte{}
 
 	startFl, _, _ := irisx.EffectiveParamFloat(c, "Start", 1.0)
@@ -65,18 +83,18 @@ func awisDomainInfo(c *iris.Context) {
 			continue
 		}
 
-		site := mdl.Site{}
+		site := mdl.Domain{}
 		sql := `SELECT 
-		      site_id
+		      domain_id
 			, domain_name
 			, global_rank
 			, country_rank
-		FROM 			` + gorpx.TableName(mdl.Site{}) + ` t1
+		FROM 			` + gorpx.TableName(mdl.Domain{}) + ` t1
 		WHERE 			1=1
-				AND		site_id = :site_id
+				AND		domain_id = :domain_id
 			`
 		args := map[string]interface{}{
-			"site_id": i,
+			"domain_id": i,
 		}
 		err = gorpx.DBMap().SelectOne(&site, sql, args)
 		util.CheckErr(err)
@@ -89,13 +107,15 @@ func awisDomainInfo(c *iris.Context) {
 
 	// return
 
+	ts := int(int32(time.Now().Unix()))
+
 	for _, site := range sites {
 
 		myUrl := url.URL{}
 		var ServiceHost2 = "awis.amazonaws.com"
 		myUrl.Host = ServiceHost2
 		myUrl.Scheme = "http"
-		logx.Printf("host is %v", myUrl.String())
+		// logx.Printf("host is %v", myUrl.String())
 
 		vals := map[string]string{
 			"Action":           "UrlInfo",
@@ -130,45 +150,97 @@ func awisDomainInfo(c *iris.Context) {
 
 		respBytes, err = ioutil.ReadAll(resp.Body)
 		util.CheckErr(err)
+
 		// target := html.EscapeString(string(respBytes))
 
-		contact, ranks, categories, err := ParseIntoContact(respBytes)
+		meta, ranks, categories, err := ParseIntoStructs(respBytes)
 		if err != nil {
 			c.Text(200, err.Error())
 			return
 		}
 
-		err = gorpx.DBMap().Insert(&contact)
-		if err != nil {
-			c.Text(200, err.Error())
-		} else {
-			for rankRecordIdx, rank := range ranks {
-				rank.Name = contact.Name
-				err = gorpx.DBMap().Insert(&rank)
-				if err != nil {
-					c.Text(200, err.Error())
-					break
-				}
-				if rankRecordIdx > 20 {
-					break // max five ranks from top to bottom
+		if meta.Name == "" {
+			log.Fatalf("meta name is empty; should contain domain name. %+v", meta)
+		}
+
+		if false {
+			// <aws:Value>+-3,244.2</aws:Value>
+			r1, err := regexp.Compile(`<aws:Value>[0-9\.\-\+]+([,])[0-9\.\-\+]+</aws:Value>`)
+			util.CheckErr(err)
+			matches := r1.FindAllSubmatchIndex(respBytes, -1)
+			for idx, match := range matches {
+				fmt.Printf("%2v result is %v\n", idx, match)
+				if len(match) > 3 {
+					p1 := match[2]
+					p2 := match[3]
+					subMatch := respBytes[p1:p2]
+					_ = subMatch
+					fmt.Printf("    -%s-\n", subMatch)
 				}
 			}
-			for catRecordIdx, cat := range categories {
-				cat.Name = contact.Name
-				err = gorpx.DBMap().Insert(&cat)
-				if err != nil {
-					c.Text(200, err.Error())
-					break
+			if err != nil {
+				c.Text(200, err.Error())
+				return
+			}
+
+			flushOutCommata := func(r rune) rune {
+				switch {
+				case r == ',':
+					return rune(-1) // drop
 				}
-				if catRecordIdx > 4 {
-					break // max five cats
-				}
+				return r
+			}
+			respBytes = bytes.Map(flushOutCommata, respBytes)
+		}
+
+		respBytes = bytes.Replace(respBytes, []byte(","), []byte(""), -1)
+		deltas, err := ParseDeltas(respBytes)
+
+		meta.LastUpdated = ts
+		err = gorpx.DBMap().Insert(&meta)
+		util.CheckErr(err, "Duplicate entry")
+
+		for _, rank := range ranks {
+			rank.Name = meta.Name
+			rank.LastUpdated = ts
+			err = gorpx.DBMap().Insert(&rank)
+			if err != nil {
+				errors += fmt.Sprintf("rank: %v\n", err)
+				break
+			}
+		}
+		for catRecordIdx, cat := range categories {
+			cat.Name = meta.Name
+			cat.LastUpdated = ts
+
+			err = gorpx.DBMap().Insert(&cat)
+			if err != nil {
+				errors += fmt.Sprintf("cat: %v\n", err)
+				break
+			}
+			if catRecordIdx > 4 {
+				break // max five cats
+			}
+		}
+		for _, delta := range deltas {
+			delta.Name = meta.Name
+			delta.LastUpdated = ts
+			// logx.Printf("--------------delta is %+v", delta)
+
+			err = gorpx.DBMap().Insert(&delta)
+			if err != nil {
+				errors += fmt.Sprintf("delta: %v\n", err)
 			}
 		}
 
-		display = util.IndentedDump(contact) + "\n" + util.IndentedDump(ranks) + "\n" + util.IndentedDump(categories)
+		display += util.IndentedDump(meta) + "\n"
+		display += util.IndentedDump(ranks) + "\n"
+		display += util.IndentedDump(categories) + "\n"
+		display += util.IndentedDump(deltas)
 		// c.Text(200, display)
 	}
+
+	display = errors + "\n\n" + display
 
 	s := struct {
 		HTMLTitle string

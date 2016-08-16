@@ -28,7 +28,7 @@ func trafficHistory(c *iris.Context) {
 	start, _, _ := irisx.EffectiveParamInt(c, "Start", 1)
 	count, _, _ := irisx.EffectiveParamInt(c, "Count", 5)
 
-	sites := []mdl.Site{}
+	sites := []mdl.Domain{}
 
 	if irisx.EffectiveParam(c, "submit", "none") != "none" {
 		sql := `SELECT  
@@ -40,7 +40,7 @@ func trafficHistory(c *iris.Context) {
 			country_pageviews_permillion,
 			country_pageviews_peruser
 
-		FROM 			` + gorpx.TableName(mdl.Site{}) + ` t1
+		FROM 			` + gorpx.TableName(mdl.Domain{}) + ` t1
 		WHERE 			1=1
 				AND		site_id >= :site_id_start
 				AND		site_id <= :site_id_end
@@ -105,7 +105,7 @@ func trafficHistory(c *iris.Context) {
 			continue
 		}
 
-		trafHists := mdl.TrafHistories{}
+		trafHists := mdl.Histories{}
 		err = xml.Unmarshal(respBytes, &trafHists)
 		if err != nil {
 			str := fmt.Sprintf("Error unmarschalling bytes for %v - size -%v-   - error %v\n\n", site.Name, len(respBytes), err)
@@ -118,8 +118,8 @@ func trafficHistory(c *iris.Context) {
 			continue
 		}
 
-		for _, oneHist := range trafHists.TrafficHistories {
-			oneHist.Site = site.Name
+		for _, oneHist := range trafHists.Histories {
+			oneHist.Name = site.Name
 			err = gorpx.DBMap().Insert(&oneHist)
 			util.CheckErr(err, "duplicate entry")
 		}

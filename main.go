@@ -8,6 +8,7 @@ import (
 	"github.com/zew/gorpx"
 	"github.com/zew/irisx"
 	"github.com/zew/logx"
+	"github.com/zew/util"
 )
 
 // The name of the application
@@ -59,31 +60,32 @@ func main() {
 
 	DDL()
 
-	gorpx.DBMapAddTable(mdl.Site{})
+	gorpx.DBMapAddTable(mdl.Domain{})
 	gorpx.DBMapAddTable(mdl.Meta{})
 	gorpx.DBMapAddTable(mdl.Rank{})
 	gorpx.DBMapAddTable(mdl.Category{})
-	gorpx.DBMapAddTable(mdl.TrafficHistory{})
+	gorpx.DBMapAddTable(mdl.Delta{})
+	gorpx.DBMapAddTable(mdl.History{})
 
 	logx.Printf("starting http server...")
 	i01.Listen(":8081")
 
 }
-
 func DDL() {
 
 	var err error
 
 	{
 		mp := gorpx.IndependentDbMapper()
-		t := mp.AddTable(mdl.Site{})
-		t.ColMap("domain_name").SetUnique(true)
-		err = mp.CreateTables()
+		t := mp.AddTable(mdl.Domain{})
+		// t.ColMap("domain_name").SetUnique(true)
+		t.SetUniqueTogether("domain_name", "last_updated")
 		err = mp.CreateTables()
 		if err != nil {
 			logx.Printf("error creating table: %v", err)
 		} else {
-			mp.CreateIndex()
+			err = mp.CreateIndex()
+			util.CheckErr(err)
 		}
 	}
 
@@ -92,11 +94,11 @@ func DDL() {
 		t := mp.AddTable(mdl.Meta{})
 		t.ColMap("domain_name").SetUnique(true)
 		err = mp.CreateTables()
-		err = mp.CreateTables()
 		if err != nil {
 			logx.Printf("error creating table: %v", err)
 		} else {
-			mp.CreateIndex()
+			err = mp.CreateIndex()
+			util.CheckErr(err)
 		}
 	}
 
@@ -110,7 +112,8 @@ func DDL() {
 		if err != nil {
 			logx.Printf("error creating table: %v", err)
 		} else {
-			mp.CreateIndex()
+			err = mp.CreateIndex()
+			util.CheckErr(err)
 		}
 	}
 
@@ -122,19 +125,35 @@ func DDL() {
 		if err != nil {
 			logx.Printf("error creating table: %v", err)
 		} else {
-			mp.CreateIndex()
+			err = mp.CreateIndex()
+			util.CheckErr(err)
 		}
 	}
 
 	{
 		mp := gorpx.IndependentDbMapper()
-		t := mp.AddTable(mdl.TrafficHistory{})
+		t := mp.AddTable(mdl.Delta{})
+		t.SetUniqueTogether("domain_name", "last_updated", "months", "days")
+		t.AddIndex("idx_domain_name", "Btree", []string{"domain_name", "months", "days"})
+		err = mp.CreateTables()
+		if err != nil {
+			logx.Printf("error creating table: %v", err)
+		} else {
+			err = mp.CreateIndex()
+			util.CheckErr(err)
+		}
+	}
+
+	{
+		mp := gorpx.IndependentDbMapper()
+		t := mp.AddTable(mdl.History{})
 		t.SetUniqueTogether("domain_name", "date")
 		err = mp.CreateTables()
 		if err != nil {
 			logx.Printf("error creating table: %v", err)
 		} else {
-			mp.CreateIndex()
+			err = mp.CreateIndex()
+			util.CheckErr(err)
 		}
 	}
 

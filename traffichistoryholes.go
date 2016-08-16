@@ -32,7 +32,7 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 	granularity, _, _ := irisx.EffectiveParamInt(c, "Granularity", 1)
 	dateBegin := irisx.EffectiveParam(c, "DateBegin", "20150101")
 
-	sites := []mdl.Site{
+	sites := []mdl.Domain{
 		{Name: "7tv.de"},
 		{Name: "advertiserurl.com"},
 		{Name: "adexc.net"},
@@ -90,7 +90,7 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 		display += site.Name + "\n"
 
 		allExistingRecords, err := gorpx.DBMap().SelectInt(
-			"SELECT count(*) FROM "+gorpx.TableName(mdl.TrafficHistory{})+" WHERE domain_name = :site ",
+			"SELECT count(*) FROM "+gorpx.TableName(mdl.History{})+" WHERE domain_name = :site ",
 			map[string]interface{}{
 				"site": site.Name,
 			},
@@ -110,7 +110,7 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 
 			logx.Printf("datesSql are %v", datesSql)
 
-			sql := "SELECT count(*) FROM " + gorpx.TableName(mdl.TrafficHistory{}) +
+			sql := "SELECT count(*) FROM " + gorpx.TableName(mdl.History{}) +
 				" WHERE domain_name = :site AND date IN (" + datesSql + ")				"
 
 			existingRecords, err := gorpx.DBMap().SelectInt(
@@ -178,7 +178,7 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 				continue
 			}
 
-			trafHists := mdl.TrafHistories{}
+			trafHists := mdl.Histories{}
 			err = xml.Unmarshal(respBytes, &trafHists)
 			if err != nil {
 				str := fmt.Sprintf("Error unmarschalling bytes for %v - size -%v-   - error %v\n\n", site.Name, len(respBytes), err)
@@ -189,10 +189,10 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 				continue
 			}
 
-			display += fmt.Sprintf("found %v xml traffic history nodes for %v\n", len(trafHists.TrafficHistories), firstStep)
-			for idx, oneHist := range trafHists.TrafficHistories {
-				oneHist.Site = site.Name
-				trafHists.TrafficHistories[idx].Site = site.Name
+			display += fmt.Sprintf("found %v xml traffic history nodes for %v\n", len(trafHists.Histories), firstStep)
+			for idx, oneHist := range trafHists.Histories {
+				oneHist.Name = site.Name
+				trafHists.Histories[idx].Name = site.Name
 				err = gorpx.DBMap().Insert(&oneHist)
 				util.CheckErr(err, "duplicate entry")
 			}

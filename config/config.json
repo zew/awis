@@ -8,8 +8,9 @@
 		"dev":{
 	 		"type":    "mysql",
 	 		"user":    "pbberlin",
-	 		"hosa":    "127.0.0.1",
-	 		"host":    "10.8.1.215",
+	 		"host_local":    "127.0.0.1",
+	 		"host_fmt"  :    "10.8.1.215",
+	 		"host":    "127.0.0.1",
 	 		"port":    "3306",
 	 		"db_name": "awisdb",
 	 		"connection_params":{

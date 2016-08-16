@@ -39,14 +39,14 @@ func iso8601Timestamp() string {
 	// ts += ".0000Z"
 	ts += "Z"
 	// gmdate("Y-m-d\TH:i:s.\\0\\0\\0\\Z", time())
-	logx.Printf("ts is %v", ts)
+	// logx.Printf("ts is %v", ts)
 	return ts
 }
 
-func ParseIntoSite(dat []byte) ([]mdl.Site, error) {
+func ParseIntoSite(dat []byte) ([]mdl.Domain, error) {
 	type Result struct {
 		// Sites []Site `xml:"TopSitesResponse>Response>TopSitesResult>Alexa>TopSites>Country>Sites>Site"`
-		Sites []mdl.Site `xml:"Response>TopSitesResult>Alexa>TopSites>Country>Sites>Site"` // omit the outmost tag name TopSitesResponse
+		Sites []mdl.Domain `xml:"Response>TopSitesResult>Alexa>TopSites>Country>Sites>Site"` // omit the outmost tag name TopSitesResponse
 	}
 	result := Result{}
 	err := xml.Unmarshal(dat, &result)
