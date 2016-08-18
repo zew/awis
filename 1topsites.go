@@ -43,7 +43,13 @@ func iso8601Timestamp() string {
 	return ts
 }
 
-func ParseIntoSite(dat []byte) ([]mdl.Domain, error) {
+func unixDayStamp() int {
+	ts := int(int32(time.Now().Unix()))
+	ts = int(ts/(24*3600))*24*3600 + 9*3600 // norm it towards a single day; 8 in the morning
+	return ts
+}
+
+func ParseIntoDomains(dat []byte) ([]mdl.Domain, error) {
 	type Result struct {
 		// Sites []Site `xml:"TopSitesResponse>Response>TopSitesResult>Alexa>TopSites>Country>Sites>Site"`
 		Sites []mdl.Domain `xml:"Response>TopSitesResult>Alexa>TopSites>Country>Sites>Site"` // omit the outmost tag name TopSitesResponse
@@ -61,7 +67,10 @@ func topSites(c *iris.Context) {
 	var err error
 	reqSigned, _ := http.NewRequest("GET", Pref(), nil)
 	display := ""
+	errors := ""
 	respBytes := []byte{}
+
+	ts := unixDayStamp()
 
 	if irisx.EffectiveParam(c, "submit", "none") != "none" {
 
@@ -70,7 +79,7 @@ func topSites(c *iris.Context) {
 		myUrl := url.URL{}
 		myUrl.Host = ServiceHost1
 		myUrl.Scheme = "http"
-		logx.Printf("host is %v", myUrl.String())
+		// logx.Printf("host is %v", myUrl.String())
 
 		vals := map[string]string{
 			"Action":           "TopSites",
@@ -119,19 +128,23 @@ func topSites(c *iris.Context) {
 		util.CheckErr(err)
 		// target := html.EscapeString(string(respBytes))
 
-		sites, err := ParseIntoSite(respBytes)
+		domains, err := ParseIntoDomains(respBytes)
 		if err != nil {
-			c.Text(200, err.Error())
-			return
+			errors += fmt.Sprintf("xml parsing failded: %v\n", err)
 		}
 
-		for _, v := range sites {
-			gorpx.DBMap().Insert(&v)
+		for _, domain := range domains {
+			domain.LastUpdated = ts
+			err := gorpx.DBMap().Insert(&domain)
+			if err != nil {
+				errors += fmt.Sprintf("domain: %v\n", err)
+			}
 		}
 
-		// c.Text(200, "xml parsed into structs")
-		display = util.IndentedDump(sites)
-		// c.Text(200, display)
+		display += util.IndentedDump(domains)
+
+		display = errors + "\n\n" + display
+
 	}
 
 	s := struct {
@@ -146,13 +159,13 @@ func topSites(c *iris.Context) {
 		ParamCountryCode string
 
 		URL         string
-		StructDump  template.HTML
+		StructDump1 template.HTML
 		StructDump2 template.HTML
 	}{
 		HTMLTitle:        AppName() + " top sites",
 		Title:            AppName() + " top sites",
 		FlashMsg:         template.HTML("Alexa Web Information Service"),
-		StructDump:       template.HTML(display),
+		StructDump2:      template.HTML(display),
 		URL:              reqSigned.URL.String(),
 		FormAction:       PathTopSites,
 		ParamUrl:         irisx.EffectiveParam(c, "Url", "www.zew.de"),

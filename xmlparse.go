@@ -21,7 +21,7 @@ func xmlparse(c *iris.Context) {
 
 	// c.Text(200, string(dat))
 
-	sites, err := ParseIntoSite(dat)
+	sites, err := ParseIntoDomains(dat)
 	if err != nil {
 		c.Text(200, err.Error())
 		return

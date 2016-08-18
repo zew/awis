@@ -107,7 +107,7 @@ func DDL() {
 		t := mp.AddTable(mdl.Rank{})
 		// t.ColMap("domain_name").SetUnique(true)
 		// t.AddIndex("idx_name_desc", "Btree", []string{"domain_name", "rank_code"})
-		t.SetUniqueTogether("domain_name", "rank_code")
+		t.SetUniqueTogether("domain_name", "last_updated", "rank_code")
 		err = mp.CreateTables()
 		if err != nil {
 			logx.Printf("error creating table: %v", err)

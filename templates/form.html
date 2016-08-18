@@ -20,12 +20,16 @@
 
 
 
-	<textarea cols='145' rows='144'>{{ .StructDump }}
-	</textarea>
+	{{ if ne "" .StructDump1 }}
+		<textarea cols='145' rows='54'>{{ .StructDump1 }}
+		</textarea>
+	{{end}}
+
 
 	{{ if ne "" .StructDump2 }}
-		<textarea cols='145' rows='144'>{{ .StructDump2 }}
-		</textarea>
+		<br/>
+		<div style='width: 90%; white-space: pre-line;'>{{ .StructDump2 }}
+		</div>
 	{{end}}
 
 

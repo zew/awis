@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"time"
 
 	"github.com/kataras/iris"
 
@@ -107,7 +106,7 @@ func awisDomainInfo(c *iris.Context) {
 
 	// return
 
-	ts := int(int32(time.Now().Unix()))
+	ts := unixDayStamp()
 
 	for _, site := range sites {
 
@@ -198,7 +197,9 @@ func awisDomainInfo(c *iris.Context) {
 
 		meta.LastUpdated = ts
 		err = gorpx.DBMap().Insert(&meta)
-		util.CheckErr(err, "Duplicate entry")
+		if err != nil {
+			errors += fmt.Sprintf("meta: %v\n", err)
+		}
 
 		for _, rank := range ranks {
 			rank.Name = meta.Name
@@ -254,7 +255,7 @@ func awisDomainInfo(c *iris.Context) {
 		ParamCountryCode string
 
 		URL         string
-		StructDump  template.HTML
+		StructDump1 template.HTML
 		StructDump2 template.HTML
 	}{
 		HTMLTitle:  AppName() + " url infos",
@@ -266,7 +267,7 @@ func awisDomainInfo(c *iris.Context) {
 		ParamStart: irisx.EffectiveParam(c, "Start", "1"),
 		ParamCount: irisx.EffectiveParam(c, "Count", "5"),
 
-		StructDump:  template.HTML(string(respBytes)),
+		StructDump1: template.HTML(string(respBytes)),
 		StructDump2: template.HTML(display),
 	}
 
