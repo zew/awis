@@ -147,7 +147,7 @@ func DDL() {
 	{
 		mp := gorpx.IndependentDbMapper()
 		t := mp.AddTable(mdl.History{})
-		t.SetUniqueTogether("domain_name", "date")
+		t.SetUniqueTogether("domain_name", "for_date")
 		err = mp.CreateTables()
 		if err != nil {
 			logx.Printf("error creating table: %v", err)

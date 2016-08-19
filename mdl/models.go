@@ -119,9 +119,9 @@ type Delta struct {
 
 //
 type History struct {
-	Id               int     `db:"site_id, primarykey, autoincrement"`
-	Name             string  `db:"domain_name, size:200, not null"`    // unique together wiht date
-	Date             string  `xml:"Date" db:"date, size:14, not null"` // unique together wiht date
+	Id               int     `db:"domain_id, primarykey, autoincrement"`
+	Name             string  `db:"domain_name, size:200, not null"`        // unique together wiht date
+	Date             string  `xml:"Date" db:"for_date, size:14, not null"` // unique together wiht date
 	PageViewsPerMio  float64 `xml:"PageViews>PerMillion" db:"pageviews_per_mio, not null"`
 	PageViewsPerUser float64 `xml:"PageViews>PerUser" db:"pageviews_per_user, not null"`
 	Rank             float64 `xml:"Rank" db:"global_rank, not null"` // dont ask me why the rank is sometimes not an integer - but it IS
