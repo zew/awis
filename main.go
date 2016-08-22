@@ -55,7 +55,7 @@ func main() {
 	//
 	//
 	logx.Printf("setting up mysql server...")
-	gorpx.DB(appcfg.Config.SQLHosts)
+	gorpx.DbInit(appcfg.Config.SQLHosts)
 	defer gorpx.DB().Close()
 
 	DDL()
