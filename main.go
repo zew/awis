@@ -55,17 +55,17 @@ func main() {
 	//
 	//
 	logx.Printf("setting up mysql server...")
-	gorpx.DbInit(appcfg.Config.SQLHosts)
-	defer gorpx.DB().Close()
+	gorpx.InitDb1(appcfg.Config.SQLHosts)
+	defer gorpx.Db1().Close()
 
 	DDL()
 
-	gorpx.DBMapAddTable(mdl.Domain{})
-	gorpx.DBMapAddTable(mdl.Meta{})
-	gorpx.DBMapAddTable(mdl.Rank{})
-	gorpx.DBMapAddTable(mdl.Category{})
-	gorpx.DBMapAddTable(mdl.Delta{})
-	gorpx.DBMapAddTable(mdl.History{})
+	gorpx.DbMap1().AddTable(mdl.Domain{})
+	gorpx.DbMap1().AddTable(mdl.Meta{})
+	gorpx.DbMap1().AddTable(mdl.Rank{})
+	gorpx.DbMap1().AddTable(mdl.Category{})
+	gorpx.DbMap1().AddTable(mdl.Delta{})
+	gorpx.DbMap1().AddTable(mdl.History{})
 
 	logx.Printf("starting http server...")
 	i01.Listen(":8081")
@@ -76,7 +76,7 @@ func DDL() {
 	var err error
 
 	{
-		mp := gorpx.IndependentDbMapper()
+		mp := gorpx.IndependentDb1Mapper()
 		t := mp.AddTable(mdl.Domain{})
 		// t.ColMap("domain_name").SetUnique(true)
 		t.SetUniqueTogether("domain_name", "last_updated")
@@ -90,7 +90,7 @@ func DDL() {
 	}
 
 	{
-		mp := gorpx.IndependentDbMapper()
+		mp := gorpx.IndependentDb1Mapper()
 		t := mp.AddTable(mdl.Meta{})
 		t.ColMap("domain_name").SetUnique(true)
 		err = mp.CreateTables()
@@ -103,7 +103,7 @@ func DDL() {
 	}
 
 	{
-		mp := gorpx.IndependentDbMapper()
+		mp := gorpx.IndependentDb1Mapper()
 		t := mp.AddTable(mdl.Rank{})
 		// t.ColMap("domain_name").SetUnique(true)
 		// t.AddIndex("idx_name_desc", "Btree", []string{"domain_name", "rank_code"})
@@ -118,7 +118,7 @@ func DDL() {
 	}
 
 	{
-		mp := gorpx.IndependentDbMapper()
+		mp := gorpx.IndependentDb1Mapper()
 		t := mp.AddTable(mdl.Category{})
 		t.SetUniqueTogether("domain_name", "category_path")
 		err = mp.CreateTables()
@@ -131,7 +131,7 @@ func DDL() {
 	}
 
 	{
-		mp := gorpx.IndependentDbMapper()
+		mp := gorpx.IndependentDb1Mapper()
 		t := mp.AddTable(mdl.Delta{})
 		t.SetUniqueTogether("domain_name", "last_updated", "months", "days")
 		t.AddIndex("idx_domain_name", "Btree", []string{"domain_name", "months", "days"})
@@ -145,7 +145,7 @@ func DDL() {
 	}
 
 	{
-		mp := gorpx.IndependentDbMapper()
+		mp := gorpx.IndependentDb1Mapper()
 		t := mp.AddTable(mdl.History{})
 		t.SetUniqueTogether("domain_name", "for_date")
 		err = mp.CreateTables()

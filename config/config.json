@@ -5,7 +5,7 @@
 	"app_name": "Alexa Web Information Service",
 	"sql_hosts": 
 	{ 
-		"dev":{
+		"dsn1":{
 	 		"type":    "mysql",
 	 		"user":    "pbberlin",
 	 		"host_local":    "127.0.0.1",

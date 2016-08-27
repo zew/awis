@@ -40,7 +40,7 @@ func trafficHistory(c *iris.Context) {
 			country_pageviews_permillion,
 			country_pageviews_peruser
 
-		FROM 			` + gorpx.TableName(mdl.Domain{}) + ` t1
+		FROM 			` + gorpx.Db1TableName(mdl.Domain{}) + ` t1
 		WHERE 			1=1
 				AND		site_id >= :site_id_start
 				AND		site_id <= :site_id_end
@@ -49,7 +49,7 @@ func trafficHistory(c *iris.Context) {
 			"site_id_start": start,
 			"site_id_end":   start + count,
 		}
-		_, err = gorpx.DBMap().Select(&sites, sql, args)
+		_, err = gorpx.DbMap1().Select(&sites, sql, args)
 		util.CheckErr(err)
 
 	}
@@ -120,7 +120,7 @@ func trafficHistory(c *iris.Context) {
 
 		for _, oneHist := range trafHists.Histories {
 			oneHist.Name = site.Name
-			err = gorpx.DBMap().Insert(&oneHist)
+			err = gorpx.DbMap1().Insert(&oneHist)
 			util.CheckErr(err, "duplicate entry")
 		}
 
