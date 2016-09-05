@@ -22,6 +22,7 @@ func AppName(p ...string) string {
 
 const (
 	PathTopSites                   = "/top-sites"
+	PathTopSitesAuto               = "/top-sites-auto"
 	TrafficHistory                 = "/top-sites-batched"
 	TrafficHistoryFillMissingHoles = "/traffic-history-missing-holes"
 	PathDomainInfo                 = "/domain-info"
@@ -48,6 +49,7 @@ func main() {
 
 	i01.Get(Pref(PathDomainInfo), awisDomainInfo)
 	i01.Get(Pref(PathTopSites), topSites)
+	i01.Get(Pref(PathTopSitesAuto), topSitesAuto)
 	i01.Get(Pref(TrafficHistory), trafficHistory)
 	i01.Get(Pref(TrafficHistoryFillMissingHoles), trafficHistoryFillMissingHoles)
 	i01.Get(Pref("/xmlparse"), xmlparse)
