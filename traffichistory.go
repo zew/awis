@@ -49,7 +49,7 @@ func trafficHistory(c *iris.Context) {
 			"site_id_start": start,
 			"site_id_end":   start + count,
 		}
-		_, err = gorpx.DbMap1().Select(&sites, sql, args)
+		_, err = gorpx.Db1Map().Select(&sites, sql, args)
 		util.CheckErr(err)
 
 	}
@@ -120,7 +120,7 @@ func trafficHistory(c *iris.Context) {
 
 		for _, oneHist := range trafHists.Histories {
 			oneHist.Name = site.Name
-			err = gorpx.DbMap1().Insert(&oneHist)
+			err = gorpx.Db1Map().Insert(&oneHist)
 			util.CheckErr(err, "duplicate entry")
 		}
 

@@ -135,7 +135,7 @@ func topSites(c *iris.Context) {
 
 		for _, domain := range domains {
 			domain.LastUpdated = ts
-			err := gorpx.DbMap1().Insert(&domain)
+			err := gorpx.Db1Map().Insert(&domain)
 			if err != nil {
 				errors += fmt.Sprintf("domain: %v\n", err)
 			}

@@ -89,7 +89,7 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 		}
 		display += site.Name + "\n"
 
-		allExistingRecords, err := gorpx.DbMap1().SelectInt(
+		allExistingRecords, err := gorpx.Db1Map().SelectInt(
 			"SELECT count(*) FROM "+gorpx.Db1TableName(mdl.History{})+" WHERE domain_name = :site ",
 			map[string]interface{}{
 				"site": site.Name,
@@ -113,7 +113,7 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 			sql := "SELECT count(*) FROM " + gorpx.Db1TableName(mdl.History{}) +
 				" WHERE domain_name = :site AND date IN (" + datesSql + ")				"
 
-			existingRecords, err := gorpx.DbMap1().SelectInt(
+			existingRecords, err := gorpx.Db1Map().SelectInt(
 				sql,
 				map[string]interface{}{
 					"site": site.Name,
@@ -193,7 +193,7 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 			for idx, oneHist := range trafHists.Histories {
 				oneHist.Name = site.Name
 				trafHists.Histories[idx].Name = site.Name
-				err = gorpx.DbMap1().Insert(&oneHist)
+				err = gorpx.Db1Map().Insert(&oneHist)
 				util.CheckErr(err, "duplicate entry")
 			}
 

@@ -64,8 +64,8 @@ func irisInctanceConfig(i01 *iris.Framework) {
 	logx.Printf("engine loaded dir; %T", engine)
 	logx.Printf("engine funcs %v", engine.Funcs())
 
-	var tel *iris.TemplateEngineLocation
-	tel = i01.UseTemplate(engine)
+	// var tel *iris.TemplateEngineLocation
+	tel := i01.UseTemplate(engine)
 	tel.Directory("./templates", ".html")
 	logx.Printf("loaded dir2 %T", tel)
 

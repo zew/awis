@@ -95,7 +95,7 @@ func awisDomainInfo(c *iris.Context) {
 		args := map[string]interface{}{
 			"domain_id": i,
 		}
-		err = gorpx.DbMap1().SelectOne(&site, sql, args)
+		err = gorpx.Db1Map().SelectOne(&site, sql, args)
 		util.CheckErr(err)
 		// c.Text(200, fmt.Sprintf("%v - %+v\n\n", i, site))
 		sites = append(sites, site.Name)
@@ -196,7 +196,7 @@ func awisDomainInfo(c *iris.Context) {
 		deltas, err := ParseDeltas(respBytes)
 
 		meta.LastUpdated = ts
-		err = gorpx.DbMap1().Insert(&meta)
+		err = gorpx.Db1Map().Insert(&meta)
 		if err != nil {
 			errors += fmt.Sprintf("meta: %v\n", err)
 		}
@@ -204,7 +204,7 @@ func awisDomainInfo(c *iris.Context) {
 		for _, rank := range ranks {
 			rank.Name = meta.Name
 			rank.LastUpdated = ts
-			err = gorpx.DbMap1().Insert(&rank)
+			err = gorpx.Db1Map().Insert(&rank)
 			if err != nil {
 				errors += fmt.Sprintf("rank: %v\n", err)
 				break
@@ -214,7 +214,7 @@ func awisDomainInfo(c *iris.Context) {
 			cat.Name = meta.Name
 			cat.LastUpdated = ts
 
-			err = gorpx.DbMap1().Insert(&cat)
+			err = gorpx.Db1Map().Insert(&cat)
 			if err != nil {
 				errors += fmt.Sprintf("cat: %v\n", err)
 				break
@@ -228,7 +228,7 @@ func awisDomainInfo(c *iris.Context) {
 			delta.LastUpdated = ts
 			// logx.Printf("--------------delta is %+v", delta)
 
-			err = gorpx.DbMap1().Insert(&delta)
+			err = gorpx.Db1Map().Insert(&delta)
 			if err != nil {
 				errors += fmt.Sprintf("delta: %v\n", err)
 			}

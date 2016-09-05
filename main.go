@@ -56,16 +56,16 @@ func main() {
 	//
 	logx.Printf("setting up mysql server...")
 	gorpx.InitDb1(appcfg.Config.SQLHosts)
-	defer gorpx.Db1().Close()
+	defer gorpx.Db1Close()
 
 	DDL()
 
-	gorpx.DbMap1().AddTable(mdl.Domain{})
-	gorpx.DbMap1().AddTable(mdl.Meta{})
-	gorpx.DbMap1().AddTable(mdl.Rank{})
-	gorpx.DbMap1().AddTable(mdl.Category{})
-	gorpx.DbMap1().AddTable(mdl.Delta{})
-	gorpx.DbMap1().AddTable(mdl.History{})
+	gorpx.Db1Map().AddTable(mdl.Domain{})
+	gorpx.Db1Map().AddTable(mdl.Meta{})
+	gorpx.Db1Map().AddTable(mdl.Rank{})
+	gorpx.Db1Map().AddTable(mdl.Category{})
+	gorpx.Db1Map().AddTable(mdl.Delta{})
+	gorpx.Db1Map().AddTable(mdl.History{})
 
 	logx.Printf("starting http server...")
 	i01.Listen(":8081")
