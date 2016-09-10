@@ -1,7 +1,7 @@
 *.log
 main.sqlite
-setenv.bat
-setenv*.bat
+setenv_unix?.sh
+setenv?.bat
 *.exe
 tmp/*
 traffic-data-*.xml

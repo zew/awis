@@ -1,1 +1,0 @@
-ALTER TABLE rank COMMENT = 'rank by country - user percentage by country';
