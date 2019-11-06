@@ -10,27 +10,26 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
 
-	"github.com/smartystreets/go-aws-auth"
+	awsauth "github.com/smartystreets/go-aws-auth"
 	"github.com/zew/awis/mdl"
 	"github.com/zew/gorpx"
-	"github.com/zew/irisx"
 	"github.com/zew/logx"
 	"github.com/zew/util"
 )
 
-func trafficHistoryFillMissingHoles(c *iris.Context) {
+func trafficHistoryFillMissingHoles(c iris.Context) {
 
 	var err error
 	reqSigned, _ := http.NewRequest("GET", Pref(), nil)
 	display := ""
 	respBytes := []byte{}
 
-	start, _, _ := irisx.EffectiveParamInt(c, "Start", 0)
-	count, _, _ := irisx.EffectiveParamInt(c, "Count", 5)
-	granularity, _, _ := irisx.EffectiveParamInt(c, "Granularity", 1)
-	dateBegin := irisx.EffectiveParam(c, "DateBegin", "20150101")
+	start := EffectiveParamInt(c, "Start", 0)
+	count := EffectiveParamInt(c, "Count", 5)
+	granularity := EffectiveParamInt(c, "Granularity", 1)
+	dateBegin := EffectiveParam(c, "DateBegin", "20150101")
 
 	sites := []mdl.Domain{
 		{Name: "7tv.de"},
@@ -81,16 +80,16 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 	// sites = sites[0:3]
 
 	logx.Printf("sites are %v", sites)
-
+	awsAccessKeyID, _ := util.EnvVar("AWS_ACCESS_KEY_ID")
 	for idxSite, site := range sites {
 
-		if irisx.EffectiveParam(c, "submit", "none") == "none" {
+		if EffectiveParam(c, "submit", "none") == "none" {
 			break
 		}
 		display += site.Name + "\n"
 
-		allExistingRecords, err := gorpx.Db1Map().SelectInt(
-			"SELECT count(*) FROM "+gorpx.Db1TableName(mdl.History{})+" WHERE domain_name = :site ",
+		allExistingRecords, err := gorpx.DbMap().SelectInt(
+			"SELECT count(*) FROM "+gorpx.DbTableName(mdl.History{})+" WHERE domain_name = :site ",
 			map[string]interface{}{
 				"site": site.Name,
 			},
@@ -110,10 +109,10 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 
 			logx.Printf("datesSql are %v", datesSql)
 
-			sql := "SELECT count(*) FROM " + gorpx.Db1TableName(mdl.History{}) +
+			sql := "SELECT count(*) FROM " + gorpx.DbTableName(mdl.History{}) +
 				" WHERE domain_name = :site AND date IN (" + datesSql + ")				"
 
-			existingRecords, err := gorpx.Db1Map().SelectInt(
+			existingRecords, err := gorpx.DbMap().SelectInt(
 				sql,
 				map[string]interface{}{
 					"site": site.Name,
@@ -139,7 +138,7 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 
 			vals := map[string]string{
 				"Action":           "TrafficHistory",
-				"AWSAccessKeyId":   util.EnvVar("AWS_ACCESS_KEY_ID"),
+				"AWSAccessKeyId":   awsAccessKeyID,
 				"SignatureMethod":  "HmacSHA256",
 				"SignatureVersion": "2",
 				"Timestamp":        iso8601Timestamp(),
@@ -147,7 +146,7 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 				"ResponseGroup": "History",
 
 				"Url":         site.Name,
-				"CountryCode": irisx.EffectiveParam(c, "CountryCode", "DE"), // has no effect :(
+				"CountryCode": EffectiveParam(c, "CountryCode", "DE"), // has no effect :(
 				"Start":       firstStep,
 				"Range":       fmt.Sprintf("%v", granularity),
 			}
@@ -193,12 +192,12 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 			for idx, oneHist := range trafHists.Histories {
 				oneHist.Name = site.Name
 				trafHists.Histories[idx].Name = site.Name
-				err = gorpx.Db1Map().Insert(&oneHist)
+				err = gorpx.DbMap().Insert(&oneHist)
 				util.CheckErr(err, "duplicate entry")
 			}
 
 			display += util.IndentedDump(trafHists) + "\n"
-			// c.Text(200, display)
+			// c.WriteString(display)
 		}
 	}
 
@@ -229,14 +228,14 @@ func trafficHistoryFillMissingHoles(c *iris.Context) {
 
 		FormAction: TrafficHistoryFillMissingHoles,
 
-		ParamStart:     irisx.EffectiveParam(c, "Start", "0"),
-		ParamCount:     irisx.EffectiveParam(c, "Count", "10"),
-		ParamDateBegin: irisx.EffectiveParam(c, "DateBegin", "20150101"),
+		ParamStart:     EffectiveParam(c, "Start", "0"),
+		ParamCount:     EffectiveParam(c, "Count", "10"),
+		ParamDateBegin: EffectiveParam(c, "DateBegin", "20150101"),
 
 		StructDump: template.HTML(display),
 	}
 
-	err = c.Render("traffic-history.html", s)
+	err = c.View("traffic-history.html", s)
 	util.CheckErr(err)
 
 }

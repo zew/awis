@@ -8,29 +8,28 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
+	awsauth "github.com/smartystreets/go-aws-auth"
 
-	"github.com/smartystreets/go-aws-auth"
 	"github.com/zew/awis/mdl"
 	"github.com/zew/gorpx"
-	"github.com/zew/irisx"
 	"github.com/zew/logx"
 	"github.com/zew/util"
 )
 
-func trafficHistory(c *iris.Context) {
+func trafficHistory(c iris.Context) {
 
 	var err error
 	reqSigned, _ := http.NewRequest("GET", Pref(), nil)
 	display := ""
 	respBytes := []byte{}
 
-	start, _, _ := irisx.EffectiveParamInt(c, "Start", 1)
-	count, _, _ := irisx.EffectiveParamInt(c, "Count", 5)
+	start := EffectiveParamInt(c, "Start", 1)
+	count := EffectiveParamInt(c, "Count", 5)
 
 	sites := []mdl.Domain{}
 
-	if irisx.EffectiveParam(c, "submit", "none") != "none" {
+	if EffectiveParam(c, "submit", "none") != "none" {
 		sql := `SELECT  
 			site_id,
 			domain_name,
@@ -40,7 +39,7 @@ func trafficHistory(c *iris.Context) {
 			country_pageviews_permillion,
 			country_pageviews_peruser
 
-		FROM 			` + gorpx.Db1TableName(mdl.Domain{}) + ` t1
+		FROM 			` + gorpx.DbTableName(mdl.Domain{}) + ` t1
 		WHERE 			1=1
 				AND		site_id >= :site_id_start
 				AND		site_id <= :site_id_end
@@ -49,13 +48,13 @@ func trafficHistory(c *iris.Context) {
 			"site_id_start": start,
 			"site_id_end":   start + count,
 		}
-		_, err = gorpx.Db1Map().Select(&sites, sql, args)
+		_, err = gorpx.DbMap().Select(&sites, sql, args)
 		util.CheckErr(err)
 
 	}
 
 	logx.Printf("sites are %v", sites)
-
+	awsAccessKeyID, _ := util.EnvVar("AWS_ACCESS_KEY_ID")
 	for _, site := range sites {
 
 		myUrl := url.URL{}
@@ -66,7 +65,7 @@ func trafficHistory(c *iris.Context) {
 
 		vals := map[string]string{
 			"Action":           "TrafficHistory",
-			"AWSAccessKeyId":   util.EnvVar("AWS_ACCESS_KEY_ID"),
+			"AWSAccessKeyId":   awsAccessKeyID,
 			"SignatureMethod":  "HmacSHA256",
 			"SignatureVersion": "2",
 			"Timestamp":        iso8601Timestamp(),
@@ -74,8 +73,8 @@ func trafficHistory(c *iris.Context) {
 			"ResponseGroup": "History",
 
 			"Url":         site.Name,
-			"CountryCode": irisx.EffectiveParam(c, "CountryCode", "DE"), // has no effect :(
-			"Start":       irisx.EffectiveParam(c, "DateBegin", "20150101"),
+			"CountryCode": EffectiveParam(c, "CountryCode", "DE"), // has no effect :(
+			"Start":       EffectiveParam(c, "DateBegin", "20150101"),
 			"Range":       "31",
 		}
 
@@ -120,12 +119,12 @@ func trafficHistory(c *iris.Context) {
 
 		for _, oneHist := range trafHists.Histories {
 			oneHist.Name = site.Name
-			err = gorpx.Db1Map().Insert(&oneHist)
+			err = gorpx.DbMap().Insert(&oneHist)
 			util.CheckErr(err, "duplicate entry")
 		}
 
 		display += util.IndentedDump(trafHists) + "\n"
-		// c.Text(200, display)
+		// c.WriteString(display)
 	}
 
 	s := struct {
@@ -151,14 +150,14 @@ func trafficHistory(c *iris.Context) {
 
 		FormAction: TrafficHistory,
 
-		ParamStart:     irisx.EffectiveParam(c, "Start", "1"),
-		ParamCount:     irisx.EffectiveParam(c, "Count", "5"),
-		ParamDateBegin: irisx.EffectiveParam(c, "DateBegin", "20150101"),
+		ParamStart:     EffectiveParam(c, "Start", "1"),
+		ParamCount:     EffectiveParam(c, "Count", "5"),
+		ParamDateBegin: EffectiveParam(c, "DateBegin", "20150101"),
 
 		StructDump: template.HTML(display),
 	}
 
-	err = c.Render("traffic-history.html", s)
+	err = c.View("traffic-history.html", s)
 	util.CheckErr(err)
 
 }

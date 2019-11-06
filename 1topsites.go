@@ -12,12 +12,11 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
 
-	"github.com/smartystreets/go-aws-auth"
+	awsauth "github.com/smartystreets/go-aws-auth"
 	"github.com/zew/awis/mdl"
 	"github.com/zew/gorpx"
-	"github.com/zew/irisx"
 	"github.com/zew/logx"
 	"github.com/zew/util"
 )
@@ -62,7 +61,7 @@ func ParseIntoDomains(dat []byte) ([]mdl.Domain, error) {
 	return result.Sites, nil
 }
 
-func topSites(c *iris.Context) {
+func topSites(c iris.Context) {
 
 	var err error
 	reqSigned, _ := http.NewRequest("GET", Pref(), nil)
@@ -72,27 +71,29 @@ func topSites(c *iris.Context) {
 
 	ts := unixDayStamp()
 
-	if irisx.EffectiveParam(c, "submit", "none") != "none" {
+	if EffectiveParam(c, "submit", "none") != "none" {
 
 		var ServiceHost1 = "ats.amazonaws.com"
 
-		myUrl := url.URL{}
-		myUrl.Host = ServiceHost1
-		myUrl.Scheme = "http"
-		// logx.Printf("host is %v", myUrl.String())
+		myURL := url.URL{}
+		myURL.Host = ServiceHost1
+		myURL.Scheme = "http"
+		// logx.Printf("host is %v", myURL.String())
+
+		awsAccessKeyID, _ := util.EnvVar("AWS_ACCESS_KEY_ID")
 
 		vals := map[string]string{
 			"Action":           "TopSites",
-			"AWSAccessKeyId":   util.EnvVar("AWS_ACCESS_KEY_ID"),
+			"AWSAccessKeyId":   awsAccessKeyID,
 			"SignatureMethod":  "HmacSHA256",
 			"SignatureVersion": "2",
 			"Timestamp":        iso8601Timestamp(),
 			// "Signature" : "will be added by awsauth.Sign2(req)"
 			"ResponseGroup": "Country",
-			"Url":           irisx.EffectiveParam(c, "Url", "wwww.zew.de"),
-			"CountryCode":   irisx.EffectiveParam(c, "CountryCode", "DE"),
-			"Start":         irisx.EffectiveParam(c, "Start", "0"),
-			"Count":         irisx.EffectiveParam(c, "Count", "5"),
+			"Url":           EffectiveParam(c, "Url", "wwww.zew.de"),
+			"CountryCode":   EffectiveParam(c, "CountryCode", "DE"),
+			"Start":         EffectiveParam(c, "Start", "0"),
+			"Count":         EffectiveParam(c, "Count", "5"),
 		}
 
 		queryStr := ""
@@ -101,8 +102,8 @@ func topSites(c *iris.Context) {
 		}
 		logx.Printf("queryStr is %v", queryStr)
 
-		strUrl := myUrl.String() + "/?" + queryStr
-		req, err := http.NewRequest("GET", strUrl, nil)
+		strURL := myURL.String() + "/?" + queryStr
+		req, err := http.NewRequest("GET", strURL, nil)
 		util.CheckErr(err)
 		// logx.Printf("req is %v", req)
 
@@ -110,9 +111,11 @@ func topSites(c *iris.Context) {
 		// At every rate - we need to call Sign2(),
 		// because awsauth does not know about awis
 		if false {
+			awsSecretAccessKey, _ := util.EnvVar("AWS_SECRET_ACCESS_KEY")
+
 			awsauth.Sign2(req, awsauth.Credentials{
-				AccessKeyID:     util.EnvVar("AWS_ACCESS_KEY_ID"),
-				SecretAccessKey: util.EnvVar("AWS_SECRET_ACCESS_KEY"),
+				AccessKeyID:     awsAccessKeyID,
+				SecretAccessKey: awsSecretAccessKey,
 				// SecurityToken:   "Security Token", // STS (optional)
 			})
 		} else {
@@ -135,7 +138,7 @@ func topSites(c *iris.Context) {
 
 		for _, domain := range domains {
 			domain.LastUpdated = ts
-			err := gorpx.Db1Map().Insert(&domain)
+			err := gorpx.DbMap().Insert(&domain)
 			if err != nil {
 				errors += fmt.Sprintf("domain: %v\n", err)
 			}
@@ -168,13 +171,12 @@ func topSites(c *iris.Context) {
 		StructDump2:      template.HTML(display),
 		URL:              reqSigned.URL.String(),
 		FormAction:       PathTopSites,
-		ParamUrl:         irisx.EffectiveParam(c, "Url", "www.zew.de"),
-		ParamStart:       irisx.EffectiveParam(c, "Start", "0"),
-		ParamCount:       irisx.EffectiveParam(c, "Count", "5"),
-		ParamCountryCode: irisx.EffectiveParam(c, "CountryCode", "DE"),
+		ParamUrl:         EffectiveParam(c, "Url", "www.zew.de"),
+		ParamStart:       EffectiveParam(c, "Start", "0"),
+		ParamCount:       EffectiveParam(c, "Count", "5"),
+		ParamCountryCode: EffectiveParam(c, "CountryCode", "DE"),
 	}
 
-	err = c.Render("form.html", s)
+	err = c.View("form.html", s)
 	util.CheckErr(err)
-
 }

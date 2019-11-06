@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
 	"github.com/zew/util"
 )
 
-func index(c *iris.Context) {
+func index(c iris.Context) {
 
 	links := map[string]string{
 		"Site Infos":                PathDomainInfo,
@@ -25,7 +25,6 @@ func index(c *iris.Context) {
 		Links:     links,
 	}
 
-	err = c.Render("index.html", s)
+	err = c.View("index.html", s)
 	util.CheckErr(err)
-
 }
