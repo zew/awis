@@ -1,15 +1,15 @@
 package main
 
 import (
-	"fmt"
+	"net/url"
 	"time"
 
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
 	"github.com/zew/logx"
 	"github.com/zew/util"
 )
 
-func topSitesAuto(c *iris.Context) {
+func topSitesAuto(c iris.Context) {
 
 	starts := []string{
 		"0", "100", "200", "300", "400", "500", "600", "700", "800", "900",
@@ -31,19 +31,24 @@ func topSitesAuto(c *iris.Context) {
 
 	for _, v := range starts {
 		url1 := "http://localhost:8081/alexa_web_information_service/top-sites"
-		keys := []string{"Start", "Count", "CountryCode", "submit"}
-		vals := []string{v, "100", "DE", "+Submit+"}
-		if v == "2000" || justOne {
-			vals[1] = "1"
+		vals := url.Values{
+			"Start":       []string{v},
+			"Count":       []string{"100"},
+			"CountryCode": []string{"DE"},
+			"submit":      []string{"+Submit+"},
 		}
-		bytes, err := util.Request("GET", url1, keys, vals)
+		if v == "2000" || justOne {
+			vals["Count"] = []string{"1"}
+		}
+
+		bytes, err := util.Request("GET", url1, vals, nil)
 		_ = bytes
 		if err != nil {
-			c.WriteString(fmt.Sprintf("err %v - %v %v\n", err, url1, vals))
+			c.Writef("err %v - %v %v\n", err, url1, vals)
 			return
 		}
-		// c.WriteString(fmt.Sprintf("%s", bytes))
-		c.WriteString(fmt.Sprintf("success - %s\n", vals))
+		// c.Writef("%s", bytes)
+		c.Writef("success - %s\n", vals)
 
 		time.Sleep(2500 * time.Millisecond)
 	}

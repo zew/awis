@@ -2,12 +2,12 @@ package main
 
 import (
 	"html/template"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/iris-contrib/template/html"
-	"github.com/kataras/iris"
-	"github.com/kataras/iris/config"
+	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/sessions"
 
 	appcfg "github.com/zew/awis/config"
 	"github.com/zew/logx"
@@ -33,40 +33,136 @@ func Pref(p ...string) string {
 	return "/" + s
 }
 
-func irisBaseConfig() config.Iris {
+func irisBaseConfig(i01 *iris.Application) {
+	i01.Use(iris.Gzip)
 
-	var irisConf = config.Iris{}
-
-	// irisConf.IsDevelopment = false
-
-	iris.Config.Sessions.Cookie = "irissessionid"
-	iris.Config.Sessions.GcDuration = time.Duration(2) * time.Hour
-
-	// iris.Config.Sessions.Provider = "memory"
-	// iris.UseSessionDB(db)
-
-	iris.Config.Gzip = true       // compressed gzip contents to the client, the same for Response Engines also, defaults to false
-	iris.Config.Charset = "UTF-8" // defaults to "UTF-8", the same for Response Engines also
-
-	return irisConf
+	iris.WithCharset("UTF-8")
+	iris.WithoutServerError(iris.ErrServerClosed)
 }
 
-func irisInctanceConfig(i01 *iris.Framework) {
+func irisInctanceConfig(i01 *iris.Application) {
+	engine := iris.HTML("./templates", ".html").Layout("layout.html")
+	for k, v := range funcMapAllClassic {
+		engine.AddFunc(k, v)
+	}
+	i01.RegisterView(engine)
+	logx.Printf("engine loaded dir; %T", engine)
+	logx.Printf("engine funcs %v", funcMapAllClassic)
+}
 
-	htmlConf := html.Config{
-		Layout: "layout.html",
-		Funcs:  funcMapAllClassic,
+func irisSessionsConfig(i01 *iris.Application) {
+	var keysToPersist = map[string]string{
+		"country": "DE",
 	}
 
-	var engine *html.Engine
-	engine = html.New(htmlConf)
-	engine.LoadDirectory("./templates", ".html")
-	logx.Printf("engine loaded dir; %T", engine)
-	logx.Printf("engine funcs %v", engine.Funcs())
+	/*
+		var sessDefaultStr = map[string]string{
+			"year":        fmt.Sprintf("%d", time.Now().Year()),
+			"country":     "DE",
+			"param_group": "cit",
+		}
+	*/
 
-	// var tel *iris.TemplateEngineLocation
-	tel := i01.UseTemplate(engine)
-	tel.Directory("./templates", ".html")
-	logx.Printf("loaded dir2 %T", tel)
+	sessManager := sessions.New(sessions.Config{
+		Cookie:       "irissessionid",
+		AllowReclaim: true,
+		Expires:      2 * time.Hour,
+	})
+	i01.Use(sessManager.Handler())
+	i01.Use(func(c iris.Context) {
+		sess := sessions.Get(c)
+
+		for key, vDef := range keysToPersist {
+			if vReq := EffectiveParam(c, key); vReq != "" {
+				sess.Set(key, vReq)
+				continue
+			}
+			if vSess := sess.GetString(key); vSess == "" {
+				sess.Set(key, vDef)
+			}
+		}
+
+		for key := range keysToPersist {
+			logx.Printf("sess key %14v is %q", key, sess.GetString(key))
+		}
+	})
+}
+
+// EffectiveParam searches for the effective value.
+// First among the POST fields.
+// Then among the URL "path" parameters.
+// Then among the URL GET parameters.
+// Then inside the session.
+// It might be smarter, to condense all levels down to session level
+// at the begin of each request.
+// We then would only ask the session and flash messages.
+func EffectiveParam(ctx iris.Context, key string, defaultVal ...string) string {
+	// Form data and url query parameters for POST or PUT HTTP methods.
+	if v := ctx.FormValue(key); v != "" {
+		return v
+	}
+
+	// Path Param.
+	if v := ctx.Params().Get(key); v != "" {
+		return v
+	}
+
+	// URL Get Param.
+	if v := ctx.URLParam(key); v != "" {
+		return v
+	}
+
+	// Session.
+	sess := sessions.Get(ctx)
+	if sess != nil {
+		if v := sess.GetString(key); v != "" {
+			return v
+		}
+
+		if v := sess.GetFlashString(key); v != "" {
+			return v
+		}
+	}
+
+	def := ""
+	if len(defaultVal) > 0 {
+		def = defaultVal[0]
+	}
+
+	return def
+}
+
+// EffectiveParamInt is a wrapper around EffectiveParam
+// with subsequent parsing into an int
+func EffectiveParamInt(c iris.Context, key string, defaultVal ...int) int {
+	s := EffectiveParam(c, key)
+	if s == "" {
+		if len(defaultVal) > 0 {
+			return defaultVal[0]
+		}
+		return 0
+
+	}
+	i, _ := strconv.Atoi(s)
+	return i
+}
+
+// EffectiveParamFloat is a wrapper around EffectiveParam
+// with subsequent parsing into float
+func EffectiveParamFloat(c iris.Context, key string, defaultVal ...float64) (float64, error) {
+	s := EffectiveParam(c, key)
+	if s == "" {
+		if len(defaultVal) > 0 {
+			return defaultVal[0], nil
+		}
+		return 0.0, nil
+
+	}
+
+	fl, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0.0, err
+	}
+	return fl, nil
 
 }

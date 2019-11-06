@@ -9,34 +9,30 @@ import (
 	// "launchpad.net/xmlpath"
 	"gopkg.in/xmlpath.v2"
 
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
 
 	"github.com/zew/util"
 )
 
-func xmlparse(c *iris.Context) {
-
+func xmlparse(c iris.Context) {
 	dat, err := ioutil.ReadFile("top_sites_example.xml")
 	util.CheckErr(err)
 
-	// c.Text(200, string(dat))
-
 	sites, err := ParseIntoDomains(dat)
 	if err != nil {
-		c.Text(200, err.Error())
+		c.WriteString(err.Error())
 		return
 	}
 
-	c.Text(200, "xml parsed into structs")
+	c.WriteString("xml parsed into structs\n")
 	display := util.IndentedDump(sites)
-	c.Text(200, display)
-
+	c.WriteString(display)
 }
 
 // XmlPathDemo() retrieves some deeply nested nodes.
 // Each node could
 //
-func XmlPathDemo(c *iris.Context) {
+func XmlPathDemo(c iris.Context) {
 
 	path := xmlpath.MustCompile("//Site")
 	path = xmlpath.MustCompile("/TopSitesResponse/Response/TopSitesResult/Alexa/TopSites/Country/Sites/Site")
@@ -45,30 +41,30 @@ func XmlPathDemo(c *iris.Context) {
 	util.CheckErr(err)
 	root, err := xmlpath.Parse(file)
 	if err != nil {
-		c.Text(200, err.Error())
+		c.WriteString(err.Error())
 	}
 
 	if path.Exists(root) {
-		c.Text(200, "path exists\n")
+		c.WriteString("path exists\n")
 
 		if false {
 			if value, ok := path.String(root); ok {
-				c.Text(200, value+"\n")
+				c.WriteString(value + "\n")
 			}
 			if subBytes, ok := path.Bytes(root); ok {
-				c.RequestCtx.Write(subBytes)
+				c.Write(subBytes)
 			}
 		}
 		nodes := path.Iter(root)
-		c.Text(200, "Nodes are there\n")
+		c.WriteString("Nodes are there\n")
 		for nodes.Next() {
 			node := nodes.Node()
 			str1 := fmt.Sprintf("\n\nNode is %+v  \n\n", node)
-			c.Text(200, str1)
+			c.WriteString(str1)
 		}
 
 	} else {
-		c.Text(200, "path NOT there\n")
+		c.WriteString("path NOT there\n")
 	}
 
 }
@@ -76,7 +72,7 @@ func XmlPathDemo(c *iris.Context) {
 // ParseDemo shows how to omit the outmost tag.
 // It shows how to read into a slice
 // And it shows how to "deep link" with tag1>tag2 syntax.
-func ParseDemo(c *iris.Context) {
+func ParseDemo(c iris.Context) {
 	type Email struct {
 		Addr string
 	}
@@ -105,9 +101,9 @@ func ParseDemo(c *iris.Context) {
    		`
 	err := xml.Unmarshal([]byte(data), &v)
 	if err != nil {
-		c.Text(200, err.Error())
+		c.WriteString(err.Error())
 	}
 	vs := util.IndentedDump(v)
-	c.Text(200, vs)
+	c.WriteString(vs)
 
 }

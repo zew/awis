@@ -11,12 +11,11 @@ import (
 	"net/url"
 	"regexp"
 
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
+	awsauth "github.com/smartystreets/go-aws-auth"
 
 	"github.com/zew/gorpx"
-	"github.com/zew/irisx"
 
-	"github.com/smartystreets/go-aws-auth"
 	"github.com/zew/awis/mdl"
 	"github.com/zew/logx"
 	"github.com/zew/util"
@@ -63,7 +62,7 @@ func ParseDeltas(dat []byte) ([]mdl.Delta, error) {
 	return res4.Deltas, nil
 }
 
-func awisDomainInfo(c *iris.Context) {
+func awisDomainInfo(c iris.Context) {
 
 	var err error
 	reqSigned, _ := http.NewRequest("GET", Pref(), nil)
@@ -71,14 +70,14 @@ func awisDomainInfo(c *iris.Context) {
 	errors := ""
 	respBytes := []byte{}
 
-	startFl, _, _ := irisx.EffectiveParamFloat(c, "Start", 1.0)
-	startCn, _, _ := irisx.EffectiveParamFloat(c, "Count", 5.0)
+	startFl, _ := EffectiveParamFloat(c, "Start", 1.0)
+	startCn, _ := EffectiveParamFloat(c, "Count", 5.0)
 	start := int(startFl)
 	count := int(startCn)
 	sites := []string{}
 	for i := start; i < start+count; i++ {
 
-		if irisx.EffectiveParam(c, "submit", "none") == "none" {
+		if EffectiveParam(c, "submit", "none") == "none" {
 			continue
 		}
 
@@ -88,16 +87,16 @@ func awisDomainInfo(c *iris.Context) {
 			, domain_name
 			, global_rank
 			, country_rank
-		FROM 			` + gorpx.Db1TableName(mdl.Domain{}) + ` t1
+		FROM 			` + gorpx.DbTableName(mdl.Domain{}) + ` t1
 		WHERE 			1=1
 				AND		domain_id = :domain_id
 			`
 		args := map[string]interface{}{
 			"domain_id": i,
 		}
-		err = gorpx.Db1Map().SelectOne(&site, sql, args)
+		err = gorpx.DbMap().SelectOne(&site, sql, args)
 		util.CheckErr(err)
-		// c.Text(200, fmt.Sprintf("%v - %+v\n\n", i, site))
+		// c.Writef("%v - %+v\n\n", i, site)
 		sites = append(sites, site.Name)
 
 	}
@@ -107,6 +106,7 @@ func awisDomainInfo(c *iris.Context) {
 	// return
 
 	ts := unixDayStamp()
+	awsAccessKeyID, _ := util.EnvVar("AWS_ACCESS_KEY_ID")
 
 	for _, site := range sites {
 
@@ -118,7 +118,7 @@ func awisDomainInfo(c *iris.Context) {
 
 		vals := map[string]string{
 			"Action":           "UrlInfo",
-			"AWSAccessKeyId":   util.EnvVar("AWS_ACCESS_KEY_ID"),
+			"AWSAccessKeyId":   awsAccessKeyID,
 			"SignatureMethod":  "HmacSHA256",
 			"SignatureVersion": "2",
 			"Timestamp":        iso8601Timestamp(),
@@ -126,7 +126,7 @@ func awisDomainInfo(c *iris.Context) {
 			"ResponseGroup": "RelatedLinks,Categories,RankByCountry,UsageStats,AdultContent,Speed,Language,OwnedDomains,LinksInCount,SiteData,ContactInfo",
 
 			"Url": site,
-			// "Url":           irisx.EffectiveParamIsSet(c, "Url", "wwww.zew.de"),
+			// "Url":           EffectiveParamIsSet(c, "Url", "wwww.zew.de"),
 		}
 
 		queryStr := ""
@@ -154,7 +154,7 @@ func awisDomainInfo(c *iris.Context) {
 
 		meta, ranks, categories, err := ParseIntoStructs(respBytes)
 		if err != nil {
-			c.Text(200, err.Error())
+			c.WriteString(err.Error())
 			return
 		}
 
@@ -178,7 +178,7 @@ func awisDomainInfo(c *iris.Context) {
 				}
 			}
 			if err != nil {
-				c.Text(200, err.Error())
+				c.WriteString(err.Error())
 				return
 			}
 
@@ -196,7 +196,7 @@ func awisDomainInfo(c *iris.Context) {
 		deltas, err := ParseDeltas(respBytes)
 
 		meta.LastUpdated = ts
-		err = gorpx.Db1Map().Insert(&meta)
+		err = gorpx.DbMap().Insert(&meta)
 		if err != nil {
 			errors += fmt.Sprintf("meta: %v\n", err)
 		}
@@ -204,7 +204,7 @@ func awisDomainInfo(c *iris.Context) {
 		for _, rank := range ranks {
 			rank.Name = meta.Name
 			rank.LastUpdated = ts
-			err = gorpx.Db1Map().Insert(&rank)
+			err = gorpx.DbMap().Insert(&rank)
 			if err != nil {
 				errors += fmt.Sprintf("rank: %v\n", err)
 				break
@@ -214,7 +214,7 @@ func awisDomainInfo(c *iris.Context) {
 			cat.Name = meta.Name
 			cat.LastUpdated = ts
 
-			err = gorpx.Db1Map().Insert(&cat)
+			err = gorpx.DbMap().Insert(&cat)
 			if err != nil {
 				errors += fmt.Sprintf("cat: %v\n", err)
 				break
@@ -228,7 +228,7 @@ func awisDomainInfo(c *iris.Context) {
 			delta.LastUpdated = ts
 			// logx.Printf("--------------delta is %+v", delta)
 
-			err = gorpx.Db1Map().Insert(&delta)
+			err = gorpx.DbMap().Insert(&delta)
 			if err != nil {
 				errors += fmt.Sprintf("delta: %v\n", err)
 			}
@@ -238,7 +238,7 @@ func awisDomainInfo(c *iris.Context) {
 		display += util.IndentedDump(ranks) + "\n"
 		display += util.IndentedDump(categories) + "\n"
 		display += util.IndentedDump(deltas)
-		// c.Text(200, display)
+		// c.WriteString(display)
 	}
 
 	display = errors + "\n\n" + display
@@ -263,15 +263,14 @@ func awisDomainInfo(c *iris.Context) {
 		FlashMsg:   template.HTML("Alexa Web Information Service"),
 		URL:        reqSigned.URL.String(),
 		FormAction: PathDomainInfo,
-		ParamUrl:   irisx.EffectiveParam(c, "Url", "www.zew.de"),
-		ParamStart: irisx.EffectiveParam(c, "Start", "1"),
-		ParamCount: irisx.EffectiveParam(c, "Count", "5"),
+		ParamUrl:   EffectiveParam(c, "Url", "www.zew.de"),
+		ParamStart: EffectiveParam(c, "Start", "1"),
+		ParamCount: EffectiveParam(c, "Count", "5"),
 
 		StructDump1: template.HTML(string(respBytes)),
 		StructDump2: template.HTML(display),
 	}
 
-	err = c.Render("form.html", s)
+	err = c.View("form.html", s)
 	util.CheckErr(err)
-
 }
